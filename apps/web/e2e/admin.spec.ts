@@ -34,8 +34,12 @@ test.describe('admin', () => {
     await page.goto('/en/admin/products?status=PENDING');
     const row = page.getByRole('row').filter({ hasText: title });
     await expect(row).toBeVisible();
+    // Wait for the approve request itself: the button shows a spinner (and loses its label) while saving,
+    // so "no Approve button" alone can pass before the product is actually live.
+    const approved = page.waitForResponse((r) => r.request().method() === 'POST' && /\/api\/admin\/products\/[^/]+\/approve$/.test(r.url()));
     await row.getByRole('button', { name: 'Approve' }).click();
-    await expect(row.getByRole('button', { name: 'Approve' })).toHaveCount(0);
+    expect((await approved).ok()).toBe(true);
+    await expect(row).toHaveCount(0);
 
     const found = await api(page.request, 'GET', `/products?q=${encodeURIComponent(id)}`);
     expect(found.total).toBe(1);
