@@ -2,17 +2,33 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { NextIntlClientProvider, hasLocale } from 'next-intl';
 import { setRequestLocale } from 'next-intl/server';
-import { Inter, Playfair_Display, IBM_Plex_Sans_Arabic, Noto_Naskh_Arabic } from 'next/font/google';
+import localFont from 'next/font/local';
 import { routing } from '@/i18n/routing';
 import { SmoothScroll } from '@/components/SmoothScroll';
 import { Toaster } from '@/components/ui';
 import { Providers } from '@/lib/store';
 import '../globals.css';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
-const playfair = Playfair_Display({ subsets: ['latin'], variable: '--font-playfair', style: ['normal', 'italic'] });
-const plexAr = IBM_Plex_Sans_Arabic({ subsets: ['arabic'], weight: ['400', '500', '600'], variable: '--font-plex-ar' });
-const naskh = Noto_Naskh_Arabic({ subsets: ['arabic'], weight: ['400', '600'], variable: '--font-naskh' });
+// Fonts are bundled in src/fonts (Google Fonts files, OFL licence) so builds never depend on fonts.googleapis.com.
+const inter = localFont({ src: '../../fonts/inter-latin-var.woff2', weight: '100 900', variable: '--font-inter', display: 'swap' });
+const playfair = localFont({
+  src: [
+    { path: '../../fonts/playfair-latin-var.woff2', weight: '400 900', style: 'normal' },
+    { path: '../../fonts/playfair-latin-italic-var.woff2', weight: '400 900', style: 'italic' },
+  ],
+  variable: '--font-playfair',
+  display: 'swap',
+});
+const plexAr = localFont({
+  src: [
+    { path: '../../fonts/plex-arabic-400.woff2', weight: '400' },
+    { path: '../../fonts/plex-arabic-500.woff2', weight: '500' },
+    { path: '../../fonts/plex-arabic-600.woff2', weight: '600' },
+  ],
+  variable: '--font-plex-ar',
+  display: 'swap',
+});
+const naskh = localFont({ src: '../../fonts/naskh-arabic-var.woff2', weight: '400 700', variable: '--font-naskh', display: 'swap' });
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
