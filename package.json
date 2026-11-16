@@ -1,0 +1,11 @@
+{
+  "name": "otd",
+  "private": true,
+  "packageManager": "pnpm@10.30.2",
+  "scripts": {
+    "dev": "pnpm --parallel --filter web --filter api dev",
+    "build": "pnpm --filter @otd/shared build && pnpm --filter api build && pnpm --filter web build",
+    "lint": "pnpm -r lint",
+    "seed": "pnpm --filter api seed"
+  }
+}
