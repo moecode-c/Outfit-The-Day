@@ -1,0 +1,16 @@
+import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { Listing } from '@/components/shop/Listing';
+import { sapi } from '@/lib/server';
+
+export const metadata = { title: 'Search' };
+
+export default async function SearchPage({ params, searchParams }: { params: Promise<{ locale: string }>; searchParams: Promise<Record<string, any>> }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const sp = await searchParams;
+  const t = await getTranslations('shop');
+  const tn = await getTranslations('nav');
+  const cats = ((await sapi<any[]>('/categories', { revalidate: 300 })) ?? []).filter((c) => !c.parent);
+  const title = sp.q ? t('searchFor', { q: sp.q }) : sp.onSale ? tn('sale') : sp.sort === 'newest' ? tn('new') : t('searchTitle');
+  return <Listing title={title} query={{}} sp={sp} categories={cats} />;
+}
