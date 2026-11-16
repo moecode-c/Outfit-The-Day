@@ -293,7 +293,7 @@ export class AdminController {
       .partial()
       .safeParse(b);
     if (!n.success) throw new BadRequestException(n.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; '));
-    return this.settings.set(n.data as any);
+    return this.settings.set(n.data);
   }
 
   /* ── content ── */

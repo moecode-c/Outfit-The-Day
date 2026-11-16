@@ -24,14 +24,18 @@ class HealthController {
   @Public()
   @Get()
   check() {
-    return { status: 'ok', service: 'otd-api', db: this.conn.readyState === 1 ? 'up' : 'down', time: new Date().toISOString() };
+    return { status: 'ok', service: 'otd-api', db: Number(this.conn.readyState) === 1 ? 'up' : 'down', time: new Date().toISOString() };
   }
 }
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 300 }]),
+    ThrottlerModule.forRoot({
+      throttlers: [{ ttl: 60_000, limit: 300 }],
+      // Test suites log in hundreds of times from one IP; never honoured in production.
+      skipIf: () => process.env.THROTTLE_DISABLED === 'true' && process.env.NODE_ENV !== 'production',
+    }),
     ScheduleModule.forRoot(),
     JwtModule.register({ global: true }),
     DbModule,

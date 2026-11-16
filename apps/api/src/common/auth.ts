@@ -53,7 +53,7 @@ export class AuthGuard implements CanActivate {
     if (token) {
       try {
         const p = this.jwt.verify(token, { secret: process.env.JWT_ACCESS_SECRET });
-        req.user = { id: p.sub, role: p.role, perms: p.perms ?? [], name: p.name, email: p.email } as AuthUser;
+        req.user = { id: p.sub, role: p.role, perms: p.perms ?? [], name: p.name, email: p.email };
       } catch {
         /* expired or invalid */
       }

@@ -299,7 +299,7 @@ export class CatalogService {
     const variants = dto.variants.map((v) => {
       const color = colorIds[v.colorKey];
       if (!color) throw new BadRequestException('Variant references unknown color');
-      const k = `${color}-${v.size.toUpperCase()}`;
+      const k = `${String(color)}-${v.size.toUpperCase()}`;
       if (seen.has(k)) throw new BadRequestException(`Duplicate size ${v.size} for a color`);
       seen.add(k);
       return {

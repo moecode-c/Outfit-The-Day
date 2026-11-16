@@ -1,6 +1,6 @@
 import { BadRequestException, Body, Controller, Get, Injectable, Logger, Module, NotFoundException, Param, Post, Query } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 import { Model, Types } from 'mongoose';
 import { z } from 'zod';
 import { AdminPerm, AuthUser, CurrentUser, Roles } from '../common/auth';
@@ -304,7 +304,7 @@ export class AdminFinanceController {
     const inv = await this.f.invoices.findById(id).populate('seller').lean();
     if (!inv) throw new NotFoundException();
     const entries = await this.f.ledger.find({ invoice: id }).populate('subOrder', 'number deliveredAt itemsTotal').lean();
-    return { invoice: inv, entries, seller: (inv as any).seller };
+    return { invoice: inv, entries, seller: inv.seller };
   }
 
   @AdminPerm('finance')
