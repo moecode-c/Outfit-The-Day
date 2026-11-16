@@ -30,9 +30,14 @@ export default function CheckoutPage() {
     if (!authLoading && !me) router.replace('/login?next=/checkout');
   }, [authLoading, me, router]);
   useEffect(() => {
-    if (addresses.data?.length && !addressId) setAddressId((addresses.data.find((a) => a.isDefault) ?? addresses.data[0])._id);
-    if (addresses.data && !addresses.data.length) setAdding(true);
-  }, [addresses.data, addressId]);
+    if (addresses.data?.length) {
+      // First real list (it may arrive after an empty pre-auth load opened the form): select and close the form.
+      if (!addressId) {
+        setAddressId((addresses.data.find((a) => a.isDefault) ?? addresses.data[0])._id);
+        setAdding(false);
+      }
+    } else if (me && addresses.data && !addresses.loading) setAdding(true);
+  }, [addresses.data, addresses.loading, addressId, me]);
 
   if (authLoading || !me) return <div className="px-10"><Loading /></div>;
   if (!bag.items.length) return <div className="px-4 pt-14 md:px-10"><Empty>{tb('empty')}</Empty></div>;
