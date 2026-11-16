@@ -6,6 +6,9 @@
     "dev": "pnpm --parallel --filter web --filter api dev",
     "build": "pnpm --filter @otd/shared build && pnpm --filter api build && pnpm --filter web build",
     "lint": "pnpm -r lint",
-    "seed": "pnpm --filter api seed"
+    "seed": "pnpm --filter api seed",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm --filter api test && pnpm --filter web test",
+    "test:all": "node scripts/test-all.mjs"
   }
 }

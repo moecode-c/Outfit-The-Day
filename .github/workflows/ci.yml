@@ -1,0 +1,158 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: 24
+  # Test-only values; the API never honours THROTTLE_DISABLED when NODE_ENV=production.
+  MONGODB_URI: mongodb://localhost:27017/otd_test
+  JWT_ACCESS_SECRET: ci-access-secret
+  JWT_REFRESH_SECRET: ci-refresh-secret
+  WEB_ORIGIN: http://localhost:3000
+  THROTTLE_DISABLED: 'true'
+  NEXT_TELEMETRY_DISABLED: 1
+
+jobs:
+  # ── Static checks ────────────────────────────────────────────────────────────
+  quality:
+    name: Lint & type-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @otd/shared build
+      - name: Lint (api + web)
+        run: pnpm -r lint
+      - name: Type-check (api + web)
+        run: pnpm -r typecheck
+
+  # ── Unit tests (no services) ─────────────────────────────────────────────────
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @otd/shared build
+      - name: API unit tests (pricing, coupons, search, validators)
+        run: pnpm --filter api test --ci
+      - name: Web unit tests (formatting, i18n parity, middleware matcher)
+        run: pnpm --filter web test
+
+  # ── API integration: real API + MongoDB over HTTP ────────────────────────────
+  api:
+    name: API integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      mongo:
+        image: mongo:7
+        ports: ['27017:27017']
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ping:1})'"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      API: http://localhost:4000/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - name: Build shared + API
+        run: pnpm --filter @otd/shared build && pnpm --filter api build
+      - name: Seed database
+        run: pnpm --filter api seed
+      - name: Start API
+        working-directory: apps/api
+        run: nohup node dist/main > ../../api.log 2>&1 &
+      - run: node scripts/wait-for.mjs http://localhost:4000/api/health 60
+      - name: Integration tests (auth, roles, catalog, cart, checkout, files, security headers)
+        run: pnpm --filter api test:int
+      - name: Re-seed for the scenario run
+        run: pnpm --filter api seed
+      - name: Full marketplace scenario (orders → fulfilment → InstaPay → returns → billing)
+        run: pnpm --filter api test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with: { name: api-integration-log, path: api.log, retention-days: 7 }
+
+  # ── Browser end-to-end + side tests (smoke, a11y, security) ──────────────────
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      mongo:
+        image: mongo:7
+        ports: ['27017:27017']
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ping:1})'"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      API_URL: http://localhost:4000
+      WEB_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - name: Install Playwright browser
+        run: pnpm --filter web exec playwright install --with-deps chromium
+      - name: Build everything (production builds)
+        run: pnpm build
+      - name: Seed database
+        run: pnpm --filter api seed
+      - name: Start API and web
+        run: |
+          (cd apps/api && nohup node dist/main > ../../api.log 2>&1 &)
+          (cd apps/web && nohup npx next start -p 3000 > ../../web.log 2>&1 &)
+      - run: node scripts/wait-for.mjs http://localhost:4000/api/health 60
+      - run: node scripts/wait-for.mjs http://localhost:3000/en 120
+      - name: Playwright (desktop + mobile)
+        run: pnpm --filter web test:e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: playwright-report, path: apps/web/playwright-report, retention-days: 14, if-no-files-found: ignore }
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: e2e-traces-and-logs
+          path: |
+            apps/web/test-results
+            api.log
+            web.log
+          retention-days: 7
+
+  # ── Dependency audit (report only; does not block merges) ───────────────────
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: pnpm }
+      - run: pnpm audit --prod --audit-level=high

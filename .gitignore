@@ -1,6 +1,10 @@
 node_modules
 dist
 .next
+.next-test
+test-results
+playwright-report
+blob-report
 .env
 .env.local
 *.log
