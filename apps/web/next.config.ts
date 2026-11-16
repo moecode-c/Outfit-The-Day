@@ -4,6 +4,8 @@ import createNextIntlPlugin from 'next-intl/plugin';
 const API = process.env.API_URL ?? 'http://localhost:4000';
 
 const nextConfig: NextConfig = {
+  // Lets the test build live beside a running dev server (.next) without clobbering it.
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   transpilePackages: ['@otd/shared'],
   // The browser only ever talks to this origin, so auth cookies stay first-party.
   async rewrites() {
