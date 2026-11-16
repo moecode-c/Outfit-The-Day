@@ -38,19 +38,19 @@ Based on *Multi-Vendor Marketplace MVP Scope and Feature Specification* (MVP 1.0
 ## 2. Architecture
 
 ```
-┌──────────────┐   HTTPS/JSON   ┌───────────────┐    Prisma   ┌────────────┐
-│ Next.js web  │ ─────────────▶ │  NestJS API   │ ──────────▶ │ PostgreSQL │
-│ (Vercel)     │ ◀───────────── │  (Railway)    │             └────────────┘
-│ SSR / ISR    │  JWT cookies   │               │ ──▶ Redis (BullMQ jobs, rate limit, cache)
-└──────────────┘                │               │ ──▶ Cloudflare R2 (public images / private proofs)
-                                │               │ ──▶ Resend / SMTP (emails)
+┌──────────────┐  /api/* proxy  ┌───────────────┐  Mongoose  ┌─────────────────┐
+│ Next.js web  │ ─────────────▶ │  NestJS API   │ ─────────▶ │ MongoDB (Atlas) │
+│ (Vercel)     │ ◀───────────── │ (Railway /    │            └─────────────────┘
+│ SSR          │  JWT cookies   │  Render)      │ ──▶ @nestjs/schedule cron jobs (in-process)
+└──────────────┘                │               │ ──▶ Files: local disk now, Cloudflare R2 planned
+                                │               │ ──▶ SMTP email (falls back to the admin outbox)
                                 └───────────────┘
 ```
 
-- **Auth**: JWT access token (15 min) and refresh token (30 days) in httpOnly secure cookies, argon2 password hashing, optional Google OAuth, and role guards (`CUSTOMER`, `SELLER`, `ADMIN`) plus admin permission flags.
-- **Background jobs (BullMQ)**: emails, discount expiry, InstaPay proof timeouts, weekly or monthly commission invoices, overdue reminders and auto-suspend, flags when a seller misses a return deadline.
-- **Search**: Postgres full-text search with Arabic normalization (unify the alef forms, ة→ه, ى→ي, strip diacritics) on a generated `search_vector` column. Meilisearch is the Phase 2 upgrade.
-- **Files**: product images go to public R2 with resizing through Next/Image. ID documents and payment screenshots go to **private** R2 behind signed URLs.
+- **Auth**: JWT access token (15 min) and refresh token (30 days) in httpOnly secure cookies, argon2 password hashing, Google OAuth (planned, not built yet), and role guards (`CUSTOMER`, `SELLER`, `ADMIN`) plus admin permission flags.
+- **Background jobs (@nestjs/schedule cron, no Redis)**: discount start/end refresh, InstaPay proof timeouts, weekly or monthly commission invoices, overdue reminders and auto-suspend, flags when a seller misses a return deadline.
+- **Search**: a normalized `searchText` field on each product with Arabic folding (unify the alef forms, ة→ه, ى→ي, strip diacritics), matched token by token with escaped regexes. Meilisearch is the Phase 2 upgrade.
+- **Files**: uploads are type-sniffed (JPEG/PNG/WebP/PDF) and stored on local disk (`UPLOAD_DIR`). Product images are public; ID documents and payment screenshots are **private** and only served to signed-in users allowed to see them. Moving storage to Cloudflare R2 is still to do (the swap point is in `apps/api/src/modules/files.ts`).
 - **i18n**: next-intl with `/en` and `/ar` routes, `dir="rtl"` for Arabic, Tailwind logical properties (`ms-`, `pe-`), and every user-facing text field stored as `{en, ar}` with fallback to the other language.
 - **Money**: stored as integer **piasters** (1 EGP = 100). Prices, commission % and coupons are snapshotted onto the order when it is placed.
 
@@ -59,23 +59,33 @@ Based on *Multi-Vendor Marketplace MVP Scope and Feature Specification* (MVP 1.0
 ```
 Outfit-The-Day/
 ├─ apps/
-│  ├─ web/                 Next.js
-│  │  └─ src/app/[locale]/
-│  │     ├─ (shop)/        home, women, men, kids, c/[slug], p/[slug], brands/[slug], looks/[slug], search, bag, checkout
-│  │     ├─ account/       orders, returns, addresses, wishlist, profile, notifications
-│  │     ├─ seller/        dashboard, products, orders, returns, discounts, looks, size-guides, finance, store
-│  │     ├─ admin/         dashboard, sellers, products, reviews, categories, coupons, commission, orders, returns, users, content, reports, settings
-│  │     └─ (auth)/        login, register, verify, forgot, reset, sell-with-us
-│  └─ api/                 NestJS
-│     └─ src/modules/      auth, users, addresses, geo, sellers, categories, products, variants, size-guides,
-│                          looks, search, cart, wishlist, checkout, orders, payments, returns, reviews,
-│                          coupons, discounts, commission, invoices, notifications, content, reports, files, jobs
-├─ packages/shared/        shared TypeScript types, zod schemas, enums, money helpers
-├─ docker-compose.yml      local postgres + redis
+│  ├─ web/                    Next.js 15 (App Router, next-intl, Tailwind, Framer Motion)
+│  │  ├─ src/app/[locale]/(site)/
+│  │  │  ├─ page.tsx, [dept], c/[slug], p/[slug], brands, looks, search, pages/[slug], bag, checkout
+│  │  │  ├─ login, register, verify, forgot, reset, sell
+│  │  │  ├─ account/          orders (+ invoice), returns, addresses, wishlist, profile, notifications
+│  │  │  ├─ seller/           dashboard, products, orders, returns, looks, size-guides, finance, store
+│  │  │  └─ admin/            dashboard, sellers, products, reviews, categories, coupons, orders, returns,
+│  │  │                       finance, users, admins, content, shipping, reports, outbox, settings
+│  │  ├─ src/components/      UI kit, shop components, seller editor, panel shells
+│  │  ├─ messages/            en.json, ar.json
+│  │  └─ e2e/, test/unit/     Playwright and Vitest tests
+│  └─ api/                    NestJS 11 + Mongoose
+│     ├─ src/modules/         auth, account (+ geo), catalog, files, orders, notify, finance, admin
+│     ├─ src/db/              schemas, connection, settings service
+│     ├─ src/common/          auth guards, pricing, utilities (+ Jest specs)
+│     ├─ src/seed.ts          demo data
+│     ├─ scripts/e2e.mjs      full marketplace scenario
+│     └─ test/integration/    HTTP integration tests (node:test)
+├─ packages/shared/           shared TypeScript types and enums
+├─ scripts/                   test-all.mjs (local CI run), wait-for.mjs
+├─ .github/workflows/ci.yml   GitHub Actions pipeline (see TESTING.md)
 └─ PLAN.md
 ```
 
-## 4. Data model (MongoDB collections — originally sketched relationally; implemented as Mongoose schemas in apps/api/src/db/schemas.ts)
+## 4. Data model
+
+Originally sketched relationally; implemented as MongoDB collections with Mongoose schemas in `apps/api/src/db/schemas.ts` (some child tables below are embedded documents there).
 
 - **User**(id, name, email, phone, passwordHash, role, locale, emailVerifiedAt, blockedAt, codFailures) and **AdminPermission**
 - **Address**(userId, governorateId, cityId, area, street, building, notes, isDefault) · **Governorate** / **City** (managed by the admin)
@@ -113,26 +123,37 @@ Customer pays the seller `items − coupon + shipping`. When the order is delive
 
 ## 6. Feature scope by role (summary; full detail in the spec)
 
-**Guest / Customer**: browsing by department and category, brand (= store) pages, lookbooks, search (en/ar) with filters (department, category, brand, size, color, price, rating, on sale, in stock) and sorting; product page (color swatches swap the gallery, size selector with sold-out sizes disabled, size guide, Complete the Look, reviews); wishlist; bag grouped by brand; checkout (address, shipping per seller, cash on delivery / InstaPay with one proof per seller); orders (status, tracking, cancel before shipping, invoice PDF); returns; reviews after delivery; email and in-site notifications.
+**Guest / Customer**: browsing by department and category, brand (= store) pages, lookbooks, search (en/ar) with filters (department, category, brand, size, color, price, rating, on sale, in stock) and sorting; product page (color swatches swap the gallery, size selector with sold-out sizes disabled, size guide, Complete the Look, reviews); wishlist; bag grouped by brand; checkout (address, shipping per seller, cash on delivery / InstaPay with one proof per seller); orders (status, tracking, cancel before shipping, printable invoice); returns; reviews after delivery; email and in-site notifications.
 
 **Seller (brand)**: application and approval, store profile, size guides, products with colors × sizes variants and per-color images (every product goes through admin approval), discounts, outfits/looks, order pipeline (confirm → processing → shipped with tracking → delivered, InstaPay proof review, cash-on-delivery collection, packing slip), returns, finance (ledger, invoices, pay commission with a proof), dashboard with a 30-day chart.
 
-**Admin**: dashboard and alerts, seller approvals, suspensions and commission overrides, product approval queue, review moderation, categories and departments, coupons (global and per seller), commission settings and billing cycle, verifying commission payments and recording cash payments, order and dispute oversight, user blocking, CMS (banners, home sections, lookbook features, static pages, shipping zones, email templates), reports with CSV/XLSX export, admin users and permissions, global settings.
+**Admin**: dashboard and alerts, seller approvals, suspensions and commission overrides, product approval queue, review moderation, categories and departments, coupons (global and per seller), commission settings and billing cycle, verifying commission payments and recording cash payments, order and dispute oversight, user blocking, CMS (banners, home sections, lookbook features, static pages, shipping zones, email templates), reports with CSV export (XLSX planned), admin users and permissions, global settings.
 
 ## 7. Delivery phases
 
-| # | Phase | Deliverables | Done when |
+Status as of November 2026: ✅ done · 🟡 done except the items in bold.
+
+| # | Phase | Deliverables | Status |
 |---|---|---|---|
-| 0 | **Setup** | Monorepo, Next.js and NestJS apps, Prisma, docker-compose (Postgres + Redis), shared package, lint/format, env files, CI | `pnpm dev` runs both apps; the API health check passes |
-| 1 | **Foundation** | Design system (tokens, fonts, dark mode, core components), i18n plus RTL, layout (header with mega-menu, footer), auth (register, login, verify, reset, Google), roles and guards, governorates/cities seed, categories and departments | You can register, log in and switch EN/AR and light/dark on a polished shell |
-| 2 | **Sellers and catalog** | Seller application and approval, store profile, size guides, product CRUD with colors/sizes/images upload to R2, admin approval queue, seller discounts, looks | An approved seller lists a product and the admin approves it |
-| 3 | **Shopping** | Editorial home page, department and category pages, search plus filters, product page, quick-view, wishlist, bag drawer, checkout, multi-seller orders, cash on delivery and InstaPay proof flow, stock reservation | A customer buys from 2 brands with cash on delivery and InstaPay |
-| 4 | **Operations** | Seller order pipeline, tracking, cancellations, returns flow, reviews, notifications (email templates en/ar, in-site bell), invoice PDFs, seller dashboard | A full order lifecycle including a return works end to end |
-| 5 | **Money and promotions** | Coupons (global and per seller, all rules), commission engine and ledger, coupon credits, invoices per cycle, seller payments and admin verification, late-payment jobs, statements with PDF/XLSX export | A weekly invoice is generated, paid with a proof and confirmed |
-| 6 | **Admin and launch** | Remaining admin panels, CMS, reports and exports, admin permissions, SEO (sitemap, metadata, hreflang), performance, security review (rate limits, CSRF, file validation), backups, legal pages, deployment | Deployed to production with a real domain |
+| 0 | **Setup** | Monorepo, Next.js and NestJS apps, MongoDB + Mongoose (no Docker), shared package, lint/format, env files, CI | ✅ GitHub Actions CI with lint, unit, integration and browser tests (see `TESTING.md`) |
+| 1 | **Foundation** | Design system, i18n plus RTL, layout, auth (register, login, verify, reset, Google), roles and guards, governorates/cities seed, categories and departments | 🟡 **Google sign-in** |
+| 2 | **Sellers and catalog** | Seller application and approval, store profile, size guides, product CRUD with colors/sizes/images, admin approval queue, seller discounts, looks | 🟡 Uploads go to local disk; **R2 not wired up** |
+| 3 | **Shopping** | Editorial home, department and category pages, search plus filters, product page, quick-view, wishlist, bag drawer, checkout, multi-seller orders, COD and InstaPay proof flow, stock reservation | 🟡 **Quick-view** |
+| 4 | **Operations** | Seller order pipeline, tracking, cancellations, returns, reviews, notifications (email + in-site bell), invoices, seller dashboard | 🟡 Invoices are printable pages, **not generated PDFs** |
+| 5 | **Money and promotions** | Coupons, commission engine and ledger, coupon credits, invoices per cycle, seller payments and admin verification, late-payment jobs, statements | 🟡 **No PDF/XLSX statement export** |
+| 6 | **Admin and launch** | Admin panels, CMS, reports and exports, admin permissions, SEO, performance, security review, backups, legal pages, deployment | 🟡 Panels, CMS, CSV reports, permissions, rate limits and file checks are done. **Still to do: sitemap/hreflang, CSRF tokens (SameSite cookies only today), backups, final legal text, deployment** |
+
+### Remaining before launch
+1. Google sign-in (users have a `googleId` field; there is no OAuth flow yet).
+2. Cloudflare R2 for uploads (replace the disk read/write in `apps/api/src/modules/files.ts`).
+3. SEO: `sitemap.xml`, `robots.txt`, per-page metadata and hreflang alternates.
+4. Exports: XLSX reports, PDF invoices and statements.
+5. Quick-view modal on product cards.
+6. Security: CSRF tokens on state-changing requests, production secrets, database backups (Atlas).
+7. Deployment: web on Vercel, API on Railway/Render, MongoDB Atlas, domain, SMTP account.
 
 ## 8. Phase 2+ (out of the MVP)
 Payment gateway (Paymob/Fawry), automatic payment verification, payouts, courier integration, native apps, buyer–seller chat, AI recommendations and visual search, virtual try-on, Meilisearch, seller ads, loyalty points, seller-created coupons, security deposits, fraud detection.
 
 ## 9. Before launch, the owner provides
-Commission % and billing cycle · logo and brand assets · hero photography/video · legal pages reviewed by an Egyptian lawyer (terms, privacy, returns, seller agreement) · the platform's InstaPay account · domain · Resend/SMTP account · R2 bucket.
+Commission % and billing cycle · logo and brand assets · hero photography/video · legal pages reviewed by an Egyptian lawyer (terms, privacy, returns, seller agreement) · the platform's InstaPay account · domain · SMTP account (Resend works over SMTP) · R2 bucket.

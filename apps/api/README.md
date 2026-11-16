@@ -1,98 +1,61 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# OTD API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+The NestJS 11 + MongoDB (Mongoose) REST API for OTD. Every route sits under `/api`. In the browser the web app proxies `/api/*` here, so the auth cookies (`otd_at` and `otd_rt`, both httpOnly) stay first-party.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Layout
 
-## Description
+| Path | Contents |
+|---|---|
+| `src/main.ts` | Bootstrap: helmet, CORS (`WEB_ORIGIN`), cookie parser, `/api` prefix, static `/uploads` |
+| `src/app.module.ts` | Module wiring, rate limiting (300 requests/min per IP), `GET /api/health` |
+| `src/db/` | Mongoose schemas for all collections, the connection, and the settings service (admin-editable config) |
+| `src/common/auth.ts` | JWT guard, `@Roles` / `@AdminPerm` / `@Public` decorators, `@CurrentUser` |
+| `src/common/pricing.ts` | Seller discounts, variant pricing, cart totals, how a coupon is split across brands |
+| `src/common/util.ts` | Arabic search folding, slugs, pagination, validators (Egyptian phone, ObjectId), money helpers |
+| `src/modules/auth.ts` | Register, login, refresh, logout, email verification, forgot/reset password, change password |
+| `src/modules/account.ts` | Profile, addresses, wishlist, seller application; `geo` (governorates and cities) |
+| `src/modules/catalog.ts` | Public catalog (products, search, filters, categories, brands, looks, content) and seller products, size guides and looks; admin product moderation |
+| `src/modules/files.ts` | Uploads with content sniffing; public and private files with access checks |
+| `src/modules/orders.ts` | Cart pricing, coupons, checkout, the order lifecycle, InstaPay proofs, cancellations, returns, reviews; the seller and admin order endpoints |
+| `src/modules/notify.ts` | In-site notifications and email (SMTP, or the outbox when SMTP isn't set) |
+| `src/modules/finance.ts` | Commission ledger, billing cycles and invoices, seller payments and their verification |
+| `src/modules/admin.ts` | Dashboard, sellers, users, admins and permissions, categories, coupons, CMS, shipping, reports (CSV), settings, outbox |
+| `src/seed.ts` | Resets the database to the demo data (demo logins are listed in the file header) |
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Money is stored as integer **piasters** (1 EGP = 100). Query filters such as `minPrice` and `maxPrice` take EGP.
 
-## Project setup
+## Scheduled jobs
 
-```bash
-$ pnpm install
-```
+| Schedule | Job |
+|---|---|
+| every 10 min | Cancel InstaPay orders whose proof deadline has passed |
+| every 30 min | Refresh sale prices when seller discounts start or end |
+| hourly | Flag returns the seller didn't answer in time and notify admins |
+| daily 01:00 | Generate commission invoices for finished billing cycles |
+| daily 09:00 | Warn about late payments, and suspend sellers who are past the limit |
 
-## Compile and run the project
+## Running
 
-```bash
-# development
-$ pnpm run start
-
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
-```
-
-## Run tests
+From the repo root:
 
 ```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+pnpm --filter @otd/shared build
 ```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
 
 ```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+pnpm --filter api dev
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Other scripts: `build`, `start:prod` (`node dist/main`), `seed`, `lint`, `typecheck`.
 
-## Resources
+Environment variables are listed in [`.env.example`](.env.example) and in the root [README](../../README.md#configuration).
 
-Check out a few resources that may come in handy when working with NestJS:
+## Tests
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+| Script | What it runs |
+|---|---|
+| `pnpm --filter api test` | Jest unit tests (`src/**/*.spec.ts`): pricing, coupons, utilities |
+| `pnpm --filter api test:int` | `node:test` HTTP integration tests (`test/integration`) against a running API (`API` env var, default `http://localhost:4000/api`) |
+| `pnpm --filter api test:e2e` | The 54-check full marketplace scenario (`scripts/e2e.mjs`) against a freshly seeded API |
 
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Seed first, and point the integration tests at a throwaway database. `pnpm test:all` from the root handles both. See [TESTING.md](../../TESTING.md).
