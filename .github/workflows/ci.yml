@@ -27,7 +27,7 @@ jobs:
   # ── Static checks ────────────────────────────────────────────────────────────
   quality:
     name: Lint & type-check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -44,7 +44,7 @@ jobs:
   # ── Unit tests (no services) ─────────────────────────────────────────────────
   unit:
     name: Unit tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -61,7 +61,7 @@ jobs:
   # ── API integration: real API + MongoDB over HTTP ────────────────────────────
   api:
     name: API integration
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     services:
       mongo:
@@ -99,7 +99,7 @@ jobs:
   # ── Browser end-to-end + side tests (smoke, a11y, security) ──────────────────
   e2e:
     name: E2E (Playwright)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     services:
       mongo:
@@ -147,7 +147,7 @@ jobs:
   # ── Dependency audit (report only; does not block merges) ───────────────────
   audit:
     name: Dependency audit
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     continue-on-error: true
     steps:
