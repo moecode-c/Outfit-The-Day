@@ -87,6 +87,21 @@ export class ContentController {
     return { returnWindowDays: s.returnWindowDays, codMaxOrder: s.codMaxOrder, instapayProofHours: s.instapayProofHours, ticker: { en: s.home.tickerEn, ar: s.home.tickerAr } };
   }
 
+  /** Every public URL source for the web app's sitemap.xml (slugs + last-modified only). */
+  @Public()
+  @Get('content/sitemap')
+  async sitemap() {
+    const lean = (q: any) => q.select('slug updatedAt').sort({ updatedAt: -1 }).limit(50000).lean();
+    const [products, brands, categories, looks, pages] = await Promise.all([
+      lean(this.products.find({ status: 'LIVE', sellerActive: true })),
+      lean(this.sellers.find({ status: 'APPROVED' })),
+      lean(this.categories.find({ active: true })),
+      this.looks.find({ active: true }).select('_id updatedAt').sort({ updatedAt: -1 }).limit(50000).lean(),
+      lean(this.pages.find()),
+    ]);
+    return { products, brands, categories, looks, pages };
+  }
+
   @Public()
   @Get('pages/:slug')
   async page(@Param('slug') slug: string) {

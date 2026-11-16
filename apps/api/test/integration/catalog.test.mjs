@@ -78,6 +78,17 @@ describe('catalog', () => {
     assert.ok(await get('/content/config'));
   });
 
+  it('lists only public URLs for the sitemap', async () => {
+    const sm = await get('/content/sitemap');
+    const all = await get('/products?limit=1');
+    assert.equal(sm.products.length, all.total, 'every live product, nothing else');
+    for (const k of ['products', 'brands', 'categories', 'pages']) {
+      assert.ok(sm[k].length > 0, k);
+      for (const x of sm[k]) assert.deepEqual(Object.keys(x).sort(), ['_id', 'slug', 'updatedAt'], k);
+    }
+    assert.ok(sm.looks.length > 0 && sm.looks.every((l) => l._id && !l.title));
+  });
+
   it('returns 404 for unknown brand / CMS page', async () => {
     assert.equal((await g.get('/brands/no-such-brand-xyz')).status, 404);
     assert.equal((await g.get('/pages/no-such-page-xyz')).status, 404);

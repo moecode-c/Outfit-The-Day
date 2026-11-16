@@ -37,7 +37,6 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     metadataBase: new URL(process.env.SITE_URL ?? 'http://localhost:3000'),
     title: { default: ar ? 'OTD — تأنّق ليومك' : 'OTD — Outfit The Day', template: '%s · OTD' },
     description: ar ? 'دور الأزياء المصرية المستقلة، في مكان واحد.' : 'Egypt’s independent fashion houses, curated in one place.',
-    alternates: { languages: { en: '/en', ar: '/ar' } },
     openGraph: { siteName: 'OTD — Outfit The Day', locale: ar ? 'ar_EG' : 'en_EG', type: 'website' },
   };
 }

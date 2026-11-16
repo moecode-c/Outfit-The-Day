@@ -1,12 +1,18 @@
+import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { ParallaxHero, Rail, RevealImage } from '@/components/shop/Editorial';
 import { ProductGrid } from '@/components/shop/ProductCard';
 import { Reveal } from '@/components/Reveal';
 import { Link } from '@/i18n/routing';
 import { tx } from '@/lib/format';
+import { alternates } from '@/lib/seo';
 import { sapi } from '@/lib/server';
 
 export const revalidate = 30;
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  return { alternates: alternates((await params).locale, '/') };
+}
 
 export default async function Home({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;

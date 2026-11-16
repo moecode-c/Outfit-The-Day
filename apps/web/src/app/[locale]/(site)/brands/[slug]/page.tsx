@@ -7,6 +7,7 @@ import { Reveal } from '@/components/Reveal';
 import { Stars } from '@/components/ui';
 import { Link } from '@/i18n/routing';
 import { tx } from '@/lib/format';
+import { alternates } from '@/lib/seo';
 import { qs, sapi } from '@/lib/server';
 
 type P = Promise<{ locale: string; slug: string }>;
@@ -14,7 +15,14 @@ type P = Promise<{ locale: string; slug: string }>;
 export async function generateMetadata({ params }: { params: P }): Promise<Metadata> {
   const { slug, locale } = await params;
   const d = await sapi<any>(`/brands/${slug}?facets=false&limit=1`, { revalidate: 60 });
-  return d ? { title: tx(d.seller.storeName, locale), description: tx(d.seller.description, locale) } : {};
+  if (!d) return {};
+  const s = d.seller;
+  return {
+    title: tx(s.storeName, locale),
+    description: tx(s.description, locale),
+    alternates: alternates(locale, `/brands/${slug}`),
+    openGraph: { images: s.banner ? [s.banner] : s.logo ? [s.logo] : undefined },
+  };
 }
 
 export default async function BrandPage({ params, searchParams }: { params: P; searchParams: Promise<Record<string, any>> }) {

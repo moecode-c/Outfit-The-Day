@@ -21,7 +21,7 @@ No Docker: MongoDB runs as a local service in development and on MongoDB Atlas i
 - **Admin panel**: dashboard; approval of sellers, products and reviews; categories, coupons, orders, returns, finance and payment checks, users, admins with permissions; CMS (banners, home sections, pages); shipping zones; CSV reports; email outbox; settings.
 - **Background jobs**: InstaPay proof timeouts, flags for late returns, discount start and end, billing cycles, late-payment warnings and suspension.
 
-Status and the remaining launch work are tracked in [PLAN.md](PLAN.md#7-delivery-phases). Not built yet: Google sign-in, R2 storage, sitemap/SEO, XLSX/PDF exports, quick-view, CSRF tokens, and deployment.
+Status and the remaining launch work are tracked in [PLAN.md](PLAN.md#7-delivery-phases). Not built yet: Google sign-in, R2 storage, XLSX/PDF exports, CSRF tokens, and deployment.
 
 ## Getting started
 

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
 import { tx } from '@/lib/format';
+import { alternates } from '@/lib/seo';
 import { sapi } from '@/lib/server';
 
 type P = Promise<{ locale: string; slug: string }>;
@@ -9,7 +10,7 @@ type P = Promise<{ locale: string; slug: string }>;
 export async function generateMetadata({ params }: { params: P }): Promise<Metadata> {
   const { slug, locale } = await params;
   const p = await sapi<any>(`/pages/${slug}`, { revalidate: 300 });
-  return p ? { title: tx(p.title, locale) } : {};
+  return p ? { title: tx(p.title, locale), alternates: alternates(locale, `/pages/${slug}`) } : {};
 }
 
 export default async function StaticPage({ params }: { params: P }) {

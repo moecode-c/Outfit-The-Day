@@ -1,11 +1,17 @@
+import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { RevealImage } from '@/components/shop/Editorial';
 import { Reveal } from '@/components/Reveal';
 import { Link } from '@/i18n/routing';
 import { tx } from '@/lib/format';
+import { alternates } from '@/lib/seo';
 import { sapi } from '@/lib/server';
 
-export const metadata = { title: 'The Looks' };
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'home' });
+  return { title: t('looks'), description: t('looksSub'), alternates: alternates(locale, '/looks') };
+}
 
 export default async function LooksPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;

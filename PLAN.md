@@ -138,19 +138,17 @@ Status as of November 2026: ✅ done · 🟡 done except the items in bold.
 | 0 | **Setup** | Monorepo, Next.js and NestJS apps, MongoDB + Mongoose (no Docker), shared package, lint/format, env files, CI | ✅ GitHub Actions CI with lint, unit, integration and browser tests (see `TESTING.md`) |
 | 1 | **Foundation** | Design system, i18n plus RTL, layout, auth (register, login, verify, reset, Google), roles and guards, governorates/cities seed, categories and departments | 🟡 **Google sign-in** |
 | 2 | **Sellers and catalog** | Seller application and approval, store profile, size guides, product CRUD with colors/sizes/images, admin approval queue, seller discounts, looks | 🟡 Uploads go to local disk; **R2 not wired up** |
-| 3 | **Shopping** | Editorial home, department and category pages, search plus filters, product page, quick-view, wishlist, bag drawer, checkout, multi-seller orders, COD and InstaPay proof flow, stock reservation | 🟡 **Quick-view** |
+| 3 | **Shopping** | Editorial home, department and category pages, search plus filters, product page, quick-view, wishlist, bag drawer, checkout, multi-seller orders, COD and InstaPay proof flow, stock reservation | ✅ |
 | 4 | **Operations** | Seller order pipeline, tracking, cancellations, returns, reviews, notifications (email + in-site bell), invoices, seller dashboard | 🟡 Invoices are printable pages, **not generated PDFs** |
 | 5 | **Money and promotions** | Coupons, commission engine and ledger, coupon credits, invoices per cycle, seller payments and admin verification, late-payment jobs, statements | 🟡 **No PDF/XLSX statement export** |
-| 6 | **Admin and launch** | Admin panels, CMS, reports and exports, admin permissions, SEO, performance, security review, backups, legal pages, deployment | 🟡 Panels, CMS, CSV reports, permissions, rate limits and file checks are done. **Still to do: sitemap/hreflang, CSRF tokens (SameSite cookies only today), backups, final legal text, deployment** |
+| 6 | **Admin and launch** | Admin panels, CMS, reports and exports, admin permissions, SEO, performance, security review, backups, legal pages, deployment | 🟡 Panels, CMS, CSV reports, permissions, rate limits, file checks and SEO (`sitemap.xml`, `robots.txt`, per-page canonical + hreflang) are done. **Still to do: CSRF tokens (SameSite cookies only today), backups, final legal text, deployment** |
 
 ### Remaining before launch
 1. Google sign-in (users have a `googleId` field; there is no OAuth flow yet).
 2. Cloudflare R2 for uploads (replace the disk read/write in `apps/api/src/modules/files.ts`).
-3. SEO: `sitemap.xml`, `robots.txt`, per-page metadata and hreflang alternates.
-4. Exports: XLSX reports, PDF invoices and statements.
-5. Quick-view modal on product cards.
-6. Security: CSRF tokens on state-changing requests, production secrets, database backups (Atlas).
-7. Deployment: web on Vercel, API on Railway/Render, MongoDB Atlas, domain, SMTP account.
+3. Exports: XLSX reports, PDF invoices and statements.
+4. Security: CSRF tokens on state-changing requests, production secrets, database backups (Atlas).
+5. Deployment: web on Vercel, API on Railway/Render, MongoDB Atlas, domain, SMTP account. Set `SITE_URL` on the web app to the real domain, since canonical URLs, hreflang and the sitemap are built from it.
 
 ## 8. Phase 2+ (out of the MVP)
 Payment gateway (Paymob/Fawry), automatic payment verification, payouts, courier integration, native apps, buyer–seller chat, AI recommendations and visual search, virtual try-on, Meilisearch, seller ads, loyalty points, seller-created coupons, security deposits, fraud detection.

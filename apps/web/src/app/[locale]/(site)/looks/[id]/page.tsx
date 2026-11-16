@@ -5,6 +5,7 @@ import { LookShop } from '@/components/shop/LookShop';
 import { Reveal } from '@/components/Reveal';
 import { Link } from '@/i18n/routing';
 import { tx } from '@/lib/format';
+import { alternates } from '@/lib/seo';
 import { sapi } from '@/lib/server';
 
 type P = Promise<{ locale: string; id: string }>;
@@ -12,7 +13,7 @@ type P = Promise<{ locale: string; id: string }>;
 export async function generateMetadata({ params }: { params: P }): Promise<Metadata> {
   const { id, locale } = await params;
   const l = await sapi<any>(`/looks/${id}`, { revalidate: 60 });
-  return l ? { title: tx(l.title, locale), openGraph: { images: [l.cover] } } : {};
+  return l ? { title: tx(l.title, locale), description: tx(l.description, locale) || undefined, alternates: alternates(locale, `/looks/${id}`), openGraph: { images: [l.cover] } } : {};
 }
 
 export default async function LookPage({ params }: { params: P }) {

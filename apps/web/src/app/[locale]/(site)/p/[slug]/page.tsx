@@ -7,6 +7,7 @@ import { Reveal } from '@/components/Reveal';
 import { Stars } from '@/components/ui';
 import { Link } from '@/i18n/routing';
 import { date, firstImage, tx } from '@/lib/format';
+import { alternates } from '@/lib/seo';
 import { sapi } from '@/lib/server';
 
 type P = Promise<{ locale: string; slug: string }>;
@@ -16,7 +17,7 @@ export async function generateMetadata({ params }: { params: P }): Promise<Metad
   const p = await sapi<any>(`/products/${slug}`, { revalidate: 30 });
   if (!p) return {};
   const title = `${tx(p.title, locale)} — ${tx(p.seller?.storeName, locale)}`;
-  return { title, description: tx(p.description, locale).slice(0, 160), openGraph: { title, images: [firstImage(p)] } };
+  return { title, description: tx(p.description, locale).slice(0, 160), alternates: alternates(locale, `/p/${slug}`), openGraph: { title, images: [firstImage(p)] } };
 }
 
 export default async function ProductPage({ params }: { params: P }) {

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Listing } from '@/components/shop/Listing';
 import { tx } from '@/lib/format';
+import { alternates } from '@/lib/seo';
 import { sapi } from '@/lib/server';
 
 type P = Promise<{ locale: string; slug: string }>;
@@ -11,7 +12,7 @@ export async function generateMetadata({ params }: { params: P }): Promise<Metad
   const { slug, locale } = await params;
   const cats = (await sapi<any[]>('/categories', { revalidate: 300 })) ?? [];
   const c = cats.find((x) => x.slug === slug);
-  return { title: c ? tx(c.name, locale) : undefined };
+  return c ? { title: tx(c.name, locale), alternates: alternates(locale, `/c/${slug}`) } : {};
 }
 
 export default async function CategoryPage({ params, searchParams }: { params: P; searchParams: Promise<Record<string, any>> }) {

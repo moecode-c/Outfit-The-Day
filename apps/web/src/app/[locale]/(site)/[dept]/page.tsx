@@ -2,15 +2,17 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Listing } from '@/components/shop/Listing';
+import { alternates } from '@/lib/seo';
 import { sapi } from '@/lib/server';
 
 const DEPTS = { women: 'WOMEN', men: 'MEN', kids: 'KIDS' } as const;
 type Sp = Promise<Record<string, string | string[] | undefined>>;
 
-export async function generateMetadata({ params }: { params: Promise<{ dept: string }> }): Promise<Metadata> {
-  const { dept } = await params;
-  const t = await getTranslations('nav');
-  return { title: dept in DEPTS ? t(dept as 'women') : undefined };
+export async function generateMetadata({ params }: { params: Promise<{ locale: string; dept: string }> }): Promise<Metadata> {
+  const { locale, dept } = await params;
+  if (!(dept in DEPTS)) return {};
+  const t = await getTranslations({ locale, namespace: 'nav' });
+  return { title: t(dept as 'women'), alternates: alternates(locale, `/${dept}`) };
 }
 
 export default async function DepartmentPage({ params, searchParams }: { params: Promise<{ locale: string; dept: string }>; searchParams: Sp }) {
