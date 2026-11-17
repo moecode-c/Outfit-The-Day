@@ -22,6 +22,7 @@ const M: Record<string, mongoose.Model<any>> = {};
 for (const { name, schema } of MODELS) M[name] = mongoose.model(name, schema);
 
 const img = (seed: string, w = 900, h = 1200) => `https://picsum.photos/seed/${seed}/${w}/${h}?grayscale`;
+const us = (id: string, w = 900, h = 1200) => `https://images.unsplash.com/photo-${id}?w=${w}&h=${h}&fit=crop&crop=faces,center&auto=format&q=80`;
 
 const GOVS: [string, string, number, number][] = [
   ['Cairo', 'القاهرة', 5000, 2], ['Giza', 'الجيزة', 5000, 2], ['Alexandria', 'الإسكندرية', 6000, 3], ['Qalyubia', 'القليوبية', 5500, 2],
@@ -189,7 +190,7 @@ async function main() {
   ]);
 
   await M.Banner.insertMany([
-    { placement: 'HERO', kicker: { en: 'Autumn / Winter 2026', ar: 'خريف / شتاء ٢٠٢٦' }, title: { en: 'Dress the day.', ar: 'تأنّق ليومك.' }, subtitle: { en: 'Egypt’s independent fashion houses, curated in one place.', ar: 'دور الأزياء المصرية المستقلة، في مكان واحد.' }, image: img('otd-hero', 2000, 1300), link: '/women', cta: { en: 'Shop Women', ar: 'تسوّقي للنساء' } },
+    { placement: 'HERO', kicker: { en: 'Autumn / Winter 2026', ar: 'خريف / شتاء ٢٠٢٦' }, title: { en: 'Dress the day.', ar: 'تأنّق ليومك.' }, subtitle: { en: 'Egypt’s independent fashion houses, curated in one place.', ar: 'دور الأزياء المصرية المستقلة، في مكان واحد.' }, image: us('1662532577856-e8ee8b138a8b', 2000, 1300), link: '/women', cta: { en: 'Shop Women', ar: 'تسوّقي للنساء' } },
     { placement: 'EDIT', title: { en: 'New In', ar: 'وصل حديثًا' }, image: img('edit-new', 1200, 1500), link: '/search?sort=newest' },
     { placement: 'EDIT', title: { en: 'Complete the Look', ar: 'أكمل الإطلالة' }, image: img('edit-looks', 1200, 1600), link: '/looks' },
     { placement: 'EDIT', title: { en: 'Designers to Know', ar: 'مصممون يجب أن تعرفهم' }, image: img('edit-brands', 1600, 1000), link: '/brands' },
