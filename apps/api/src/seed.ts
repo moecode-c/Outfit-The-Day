@@ -132,11 +132,13 @@ async function main() {
   const RED = C('Red', 'أحمر', '#b3261e', 'red');
   const EMERALD = C('Emerald', 'زمردي', '#1f6b4f', 'green');
   const BLUSH = C('Blush', 'وردي', '#e3a1b4', 'pink');
+  const MUSTARD = C('Mustard', 'خردلي', '#d4a017', 'yellow');
   // Real photos for the colored options, keyed by color name; other colors keep the placeholders.
   const PHOTOS: Record<string, string[]> = {
     'dress:Red': ['1595777457583-95e059d581b8', '1612336307429-8a898d10e223', '1622460432096-f6b772409e1f'],
     'dress:Emerald': ['1631084675579-20db768ae08a', '1685703203919-0c2cfc893c60', '1645626331099-71776e7b31a0'],
     'hijab:Blush': ['1601869610377-0ccf555ed20c', '1617183835731-2d5b33be9f2a', '1772625717865-a6300f44543e'],
+    'cardigan:Mustard': ['1618372053850-875650e03ade', '1618371995692-2b001101c97d', '1765650114231-e1ffa17ed3ce'],
   };
 
   type PDef = { key?: string; s: any; cat: string; dep: string; en: string; ar: string; price: number; colors: any[]; sizes: string[]; guide?: any; disc?: any; material?: [string, string] };
@@ -148,7 +150,7 @@ async function main() {
     { key: 'hijab', s: nour, cat: 'scarves', dep: 'WOMEN', en: 'Modal Hijab', ar: 'طرحة مودال', price: 32000, colors: [BLUSH, BLACK, SAND, WHITE], sizes: SIZES.one },
     { s: nour, cat: 'bags', dep: 'WOMEN', en: 'Structured Leather Tote', ar: 'حقيبة جلد منظّمة', price: 329000, colors: [BLACK], sizes: SIZES.one, disc: { type: 'FIXED_PRICE', value: 279000 } },
     { s: nour, cat: 'heels', dep: 'WOMEN', en: 'Square-Toe Slingback', ar: 'حذاء بكعب ومقدمة مربعة', price: 175000, colors: [BLACK, WHITE], sizes: ['36', '37', '38', '39', '40', '41'] },
-    { s: nour, cat: 'knitwear', dep: 'WOMEN', en: 'Ribbed Merino Cardigan', ar: 'كارديجان صوف ميرينو', price: 155000, colors: [GREY, SAND], sizes: SIZES.apparel, guide: guides.nour },
+    { key: 'cardigan', s: nour, cat: 'knitwear', dep: 'WOMEN', en: 'Ribbed Merino Cardigan', ar: 'كارديجان صوف ميرينو', price: 155000, colors: [MUSTARD, GREY, SAND], sizes: SIZES.apparel, guide: guides.nour },
     { s: kemet, cat: 'tops', dep: 'MEN', en: 'Egyptian Cotton Oxford Shirt', ar: 'قميص أكسفورد قطن مصري', price: 89000, colors: [WHITE, NAVY], sizes: SIZES.apparel.slice(1), guide: guides.kemet, material: ['100% Egyptian cotton', '١٠٠٪ قطن مصري'] },
     { s: kemet, cat: 'outerwear', dep: 'MEN', en: 'Unstructured Wool Overcoat', ar: 'معطف صوف غير مبطّن', price: 459000, colors: [GREY, BLACK], sizes: SIZES.apparel.slice(1), guide: guides.kemet },
     { s: kemet, cat: 'trousers', dep: 'MEN', en: 'Pleated Chino', ar: 'بنطال تشينو بكسرات', price: 115000, colors: [SAND, OLIVE, BLACK], sizes: SIZES.apparel.slice(1), guide: guides.kemet, disc: { type: 'PERCENT', value: 15 } },
