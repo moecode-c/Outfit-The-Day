@@ -134,6 +134,7 @@ async function main() {
   const BLUSH = C('Blush', 'وردي', '#e3a1b4', 'pink');
   const MUSTARD = C('Mustard', 'خردلي', '#d4a017', 'yellow');
   const SKY = C('Sky', 'سماوي', '#7fa7d6', 'blue');
+  const RUST = C('Rust', 'صدئي', '#c4572a', 'orange');
   // Real photos for the colored options, keyed by color name; other colors keep the placeholders.
   const PHOTOS: Record<string, string[]> = {
     'dress:Red': ['1595777457583-95e059d581b8', '1612336307429-8a898d10e223', '1622460432096-f6b772409e1f'],
@@ -142,6 +143,7 @@ async function main() {
     'cardigan:Mustard': ['1618372053850-875650e03ade', '1618371995692-2b001101c97d', '1765650114231-e1ffa17ed3ce'],
     'heel:Red': ['1670607231621-c00fd76d2387', '1654077813634-9ff6b843caab', '1611233299310-f6276ff55307'],
     'oxford:Sky': ['1624835567150-0c530a20d8cc', '1589310243389-96a5483213a8', '1620012253295-c15cc3e65df4'],
+    'crew:Rust': ['1611246164691-97f352683561', '1542735128-a1eb57a8fa0c', '1637868994502-ac06e6f1dbec'],
   };
 
   type PDef = { key?: string; s: any; cat: string; dep: string; en: string; ar: string; price: number; colors: any[]; sizes: string[]; guide?: any; disc?: any; material?: [string, string] };
@@ -157,7 +159,7 @@ async function main() {
     { key: 'oxford', s: kemet, cat: 'tops', dep: 'MEN', en: 'Egyptian Cotton Oxford Shirt', ar: 'قميص أكسفورد قطن مصري', price: 89000, colors: [SKY, WHITE, NAVY], sizes: SIZES.apparel.slice(1), guide: guides.kemet, material: ['100% Egyptian cotton', '١٠٠٪ قطن مصري'] },
     { s: kemet, cat: 'outerwear', dep: 'MEN', en: 'Unstructured Wool Overcoat', ar: 'معطف صوف غير مبطّن', price: 459000, colors: [GREY, BLACK], sizes: SIZES.apparel.slice(1), guide: guides.kemet },
     { s: kemet, cat: 'trousers', dep: 'MEN', en: 'Pleated Chino', ar: 'بنطال تشينو بكسرات', price: 115000, colors: [SAND, OLIVE, BLACK], sizes: SIZES.apparel.slice(1), guide: guides.kemet, disc: { type: 'PERCENT', value: 15 } },
-    { s: kemet, cat: 'knitwear', dep: 'MEN', en: 'Heavyweight Crewneck', ar: 'سويتر رقبة دائرية ثقيل', price: 125000, colors: [GREY, NAVY], sizes: SIZES.apparel.slice(1), guide: guides.kemet },
+    { key: 'crew', s: kemet, cat: 'knitwear', dep: 'MEN', en: 'Heavyweight Crewneck', ar: 'سويتر رقبة دائرية ثقيل', price: 125000, colors: [RUST, GREY, NAVY], sizes: SIZES.apparel.slice(1), guide: guides.kemet },
     { s: kemet, cat: 'sneakers', dep: 'UNISEX', en: 'Court Leather Sneaker', ar: 'سنيكرز جلد كلاسيك', price: 199000, colors: [WHITE, BLACK], sizes: SIZES.shoes },
     { s: kemet, cat: 'loafers', dep: 'MEN', en: 'Penny Loafer', ar: 'حذاء لوفر', price: 219000, colors: [BLACK], sizes: SIZES.shoes },
     { s: kemet, cat: 'belts', dep: 'MEN', en: 'Bridle Leather Belt', ar: 'حزام جلد طبيعي', price: 45000, colors: [BLACK], sizes: ['90', '95', '100', '105'] },
