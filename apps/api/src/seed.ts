@@ -129,6 +129,9 @@ async function main() {
   const GREY = C('Charcoal', 'فحمي', '#4a4a4a', 'grey');
   const NAVY = C('Navy', 'كحلي', '#1f2a44', 'navy');
   const OLIVE = C('Olive', 'زيتي', '#5b5e3c', 'green');
+  // Real photos for the colored options, keyed by color name; other colors keep the placeholders.
+  const PHOTOS: Record<string, string[]> = {
+  };
 
   type PDef = { key?: string; s: any; cat: string; dep: string; en: string; ar: string; price: number; colors: any[]; sizes: string[]; guide?: any; disc?: any; material?: [string, string] };
   const defs: PDef[] = [
@@ -158,7 +161,7 @@ async function main() {
   let n = 0;
   for (const d of defs) {
     n++;
-    const colors = d.colors.map((c, ci) => ({ _id: new Types.ObjectId(), ...c, images: [0, 1, 2].map((k) => img(`otd-${n}-${ci}-${k}`)) }));
+    const colors = d.colors.map((c, ci) => ({ _id: new Types.ObjectId(), ...c, images: PHOTOS[`${d.key}:${c.name.en}`]?.map((id) => us(id)) ?? [0, 1, 2].map((k) => img(`otd-${n}-${ci}-${k}`)) }));
     const variants = colors.flatMap((c) =>
       d.sizes.map((size, si) => ({ _id: new Types.ObjectId(), color: c._id, size, sku: `${d.s.slug.slice(0, 4).toUpperCase()}-${n}-${si}`, stock: (n * 7 + si * 3) % 11 })),
     );
