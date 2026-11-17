@@ -191,7 +191,7 @@ async function main() {
 
   await M.Banner.insertMany([
     { placement: 'HERO', kicker: { en: 'Autumn / Winter 2026', ar: 'خريف / شتاء ٢٠٢٦' }, title: { en: 'Dress the day.', ar: 'تأنّق ليومك.' }, subtitle: { en: 'Egypt’s independent fashion houses, curated in one place.', ar: 'دور الأزياء المصرية المستقلة، في مكان واحد.' }, image: us('1662532577856-e8ee8b138a8b', 2000, 1300), link: '/women', cta: { en: 'Shop Women', ar: 'تسوّقي للنساء' } },
-    { placement: 'EDIT', title: { en: 'New In', ar: 'وصل حديثًا' }, image: img('edit-new', 1200, 1500), link: '/search?sort=newest' },
+    { placement: 'EDIT', title: { en: 'New In', ar: 'وصل حديثًا' }, image: us('1590343104492-972a3169bc98', 1200, 1500), link: '/search?sort=newest' },
     { placement: 'EDIT', title: { en: 'Complete the Look', ar: 'أكمل الإطلالة' }, image: img('edit-looks', 1200, 1600), link: '/looks' },
     { placement: 'EDIT', title: { en: 'Designers to Know', ar: 'مصممون يجب أن تعرفهم' }, image: img('edit-brands', 1600, 1000), link: '/brands' },
   ]);
