@@ -9,7 +9,9 @@
  *   mini@otd.test      / Seller123!     (seller: Mini Nile — kids)
  *   customer@otd.test  / Customer123!   (customer)
  *
- * Product photos are grayscale placeholders from picsum.photos — replace with real photography.
+ * Most product photos are grayscale placeholders from picsum.photos — replace with real photography.
+ * The colored products (Red, Emerald, Blush, Mustard, Sky, Rust, Sunshine) use free Unsplash photos
+ * (https://unsplash.com/license) to show how colored clothing sits inside the black-and-white design.
  */
 import 'dotenv/config';
 import * as argon2 from 'argon2';
