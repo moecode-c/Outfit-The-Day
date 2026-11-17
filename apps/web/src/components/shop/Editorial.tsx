@@ -30,18 +30,23 @@ export function ParallaxHero({ image, children }: { image?: string; children: Re
 /** Image that reveals with a clip-path wipe when scrolled into view. */
 export function RevealImage({ src, alt = '', className, ratio = 'aspect-[3/4]' }: { src?: string; alt?: string; className?: string; ratio?: string }) {
   return (
-    <div className={cx('group relative overflow-hidden bg-wash', ratio, className)}>
+    // Watch the unclipped frame, not the clipped layer: a layer clipped to zero area may never
+    // register as in view, which left some tiles permanently blank.
+    <motion.div
+      className={cx('group relative overflow-hidden bg-wash', ratio, className)}
+      initial="hidden"
+      whileInView="shown"
+      viewport={{ once: true, margin: '-10%' }}
+    >
       <motion.div
         className="absolute inset-0"
-        initial={{ clipPath: 'inset(100% 0 0 0)' }}
-        whileInView={{ clipPath: 'inset(0% 0 0 0)' }}
-        viewport={{ once: true, margin: '-10%' }}
+        variants={{ hidden: { clipPath: 'inset(100% 0 0 0)' }, shown: { clipPath: 'inset(0% 0 0 0)' } }}
         transition={{ duration: 1.2, ease: [0.77, 0, 0.175, 1] }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         {src && <img src={src} alt={alt} loading="lazy" className="h-full w-full object-cover transition-transform duration-[1600ms] ease-out group-hover:scale-105" />}
       </motion.div>
-    </div>
+    </motion.div>
   );
 }
 
