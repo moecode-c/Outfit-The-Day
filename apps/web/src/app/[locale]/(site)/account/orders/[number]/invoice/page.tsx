@@ -16,7 +16,10 @@ export default function InvoicePage() {
   if (loading || !o) return <Loading />;
   return (
     <div className="mx-auto max-w-3xl">
-      <div className="no-print mb-8 flex justify-end"><Button variant="outline" size="sm" onClick={() => window.print()}>{tc('print')}</Button></div>
+      <div className="no-print mb-8 flex justify-end gap-3">
+        <a href={`/api/orders/${o.number}/invoice/pdf`} download className="label border border-ink px-4 py-2 hover:bg-ink hover:text-canvas text-[11px]">{tc('downloadPdf')} ↓</a>
+        <Button variant="outline" size="sm" onClick={() => window.print()}>{tc('print')}</Button>
+      </div>
       <div className="border border-line p-8 print:border-0 print:p-0">
         <div className="flex items-start justify-between border-b border-ink pb-6">
           <div>

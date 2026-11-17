@@ -24,7 +24,6 @@ export const UserSchema = new Schema(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     phone: { type: String, unique: true, sparse: true },
     passwordHash: String,
-    googleId: { type: String, sparse: true },
     role: { type: String, enum: ['CUSTOMER', 'SELLER', 'ADMIN'], default: 'CUSTOMER' },
     adminPerms: { type: [String], default: [] }, // e.g. ['*'] or ['orders','sellers']
     locale: { type: String, default: 'en' },

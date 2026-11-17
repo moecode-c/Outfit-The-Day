@@ -7,5 +7,5 @@ import { api } from '@/lib/api';
 export default function SellerInvoice() {
   const { id } = useParams<{ id: string }>();
   const { data } = useLoad<any>(() => api(`/seller/finance/invoices/${id}`), [id]);
-  return data ? <InvoiceView data={data} /> : <Loading />;
+  return data ? <InvoiceView data={data} pdfUrl={`/api/seller/finance/invoices/${id}/pdf`} /> : <Loading />;
 }

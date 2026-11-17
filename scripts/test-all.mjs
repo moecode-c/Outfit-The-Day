@@ -17,13 +17,16 @@ const stage = (name) => !only || only === name;
 
 const MONGODB_URI = process.env.TEST_MONGODB_URI ?? 'mongodb://localhost:27017/otd_test';
 const uploads = fs.mkdtempSync(path.join(os.tmpdir(), 'otd-uploads-'));
+// TEST_WEB_PORT overrides :3100 when another app already uses it.
+const WEB_PORT = process.env.TEST_WEB_PORT ?? '3100';
+const WEB = `http://localhost:${WEB_PORT}`;
 const env = {
   ...process.env,
   MONGODB_URI,
   THROTTLE_DISABLED: 'true',
   JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET ?? 'local-test-access',
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET ?? 'local-test-refresh',
-  WEB_ORIGIN: 'http://localhost:3100',
+  WEB_ORIGIN: WEB,
   UPLOAD_DIR: uploads,
 };
 const children = [];
@@ -75,10 +78,10 @@ try {
     if (!skipBuild) run('build web', 'pnpm --filter web build', root, webEnv);
     seed();
     start('api', 'node dist/main', api, { PORT: '4100' });
-    start('web', 'npx next start -p 3100', web, webEnv);
+    start('web', `npx next start -p ${WEB_PORT}`, web, webEnv);
     run('wait for api', 'node scripts/wait-for.mjs http://localhost:4100/api/health 60');
-    run('wait for web', 'node scripts/wait-for.mjs http://localhost:3100/en 120');
-    run('playwright', 'pnpm --filter web test:e2e', root, { WEB_URL: 'http://localhost:3100' });
+    run('wait for web', `node scripts/wait-for.mjs ${WEB}/en 120`);
+    run('playwright', 'pnpm --filter web test:e2e', root, { WEB_URL: WEB });
   }
 } catch (e) {
   console.error('\n✖ ' + e.message);

@@ -224,6 +224,14 @@ export class AuthController {
     return { ok: true };
   }
 
+  /** Hands out the CSRF token (the csrf middleware also sets it as the otd_csrf cookie). */
+  @Public()
+  @Get('csrf')
+  csrf(@Res({ passthrough: true }) res: Response) {
+    res.setHeader('Cache-Control', 'no-store');
+    return { token: res.locals.csrfToken as string };
+  }
+
   @Get('me')
   me(@CurrentUser() u: AuthUser) {
     return this.auth.me(u.id);

@@ -21,14 +21,17 @@ export const uniq = () => `${Date.now().toString().slice(-6)}${(seq++).toString(
 /** Valid unique Egyptian mobile. */
 export const phone = () => `015${uniq().slice(-8).padStart(8, '0')}`;
 
-export function client() {
+export function client({ csrf = true } = {}) {
   const jar = new Map();
   const call = async (method, path, body, { raw, headers = {} } = {}) => {
+    // Like the web app: echo the otd_csrf cookie on state-changing requests (fetch one first if needed).
+    if (csrf && !['GET', 'HEAD', 'OPTIONS'].includes(method) && !jar.has('otd_csrf')) await call('GET', '/auth/csrf');
+    const token = csrf && !['GET', 'HEAD', 'OPTIONS'].includes(method) ? { 'x-csrf-token': jar.get('otd_csrf') } : {};
     const cookie = [...jar].map(([k, v]) => `${k}=${v}`).join('; ');
     const r = await fetch(path.startsWith('http') ? path : API + path, {
       method,
       redirect: 'manual',
-      headers: { ...(cookie ? { cookie } : {}), ...(raw || body === undefined ? {} : { 'content-type': 'application/json' }), ...headers },
+      headers: { ...(cookie ? { cookie } : {}), ...(raw || body === undefined ? {} : { 'content-type': 'application/json' }), ...token, ...headers },
       body: raw ?? (body === undefined ? undefined : JSON.stringify(body)),
     });
     for (const s of r.headers.getSetCookie?.() ?? []) {

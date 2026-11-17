@@ -6,6 +6,7 @@ import { Model, Types } from 'mongoose';
 import { z } from 'zod';
 import { AdminPerm, AuthUser, CurrentUser, Public, Roles } from '../common/auth';
 import { escapeRegex, paginate, Zod, zI18n, zId } from '../common/util';
+import { sendDownload, toXlsx } from '../common/exports';
 import { SettingsService } from '../db/settings.service';
 
 const CouponDto = z.object({
@@ -423,6 +424,12 @@ export class AdminController {
       rows = data.map((r) => [r.number, r.seller?.storeName?.en, r.reason, r.status, (r.refundAmount ?? 0) / 100, r.flagged ? 'yes' : '', new Date(r.createdAt).toISOString().slice(0, 10)]);
     } else throw new BadRequestException('Unknown report');
 
+    const file = `otd-${kind}-${from.toISOString().slice(0, 10)}-${to.toISOString().slice(0, 10)}`;
+    if (q.format === 'xlsx') {
+      const money = header.map((h, i) => (/EGP|Commission|credits|reversals|Adjustments|Payments|Net/.test(h) ? i : -1)).filter((i) => i >= 0);
+      sendDownload(res, await toXlsx([{ name: kind, header, rows, money }]), 'xlsx', file);
+      return;
+    }
     if (q.format === 'csv') {
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
       res.setHeader('Content-Disposition', `attachment; filename="otd-${kind}-${from.toISOString().slice(0, 10)}-${to.toISOString().slice(0, 10)}.csv"`);

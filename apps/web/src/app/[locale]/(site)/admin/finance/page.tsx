@@ -67,7 +67,9 @@ export default function AdminFinance() {
               <td className={b.balance > 0 ? '' : 'text-muted'}>{b.balance < 0 ? '−' : ''}{money(Math.abs(b.balance), locale)}</td>
               <td className="whitespace-nowrap text-end">
                 <button className="label me-4 underline underline-offset-4" onClick={() => setAction({ kind: 'cash', seller: b })}>{t('recordCash')}</button>
-                <button className="label underline underline-offset-4" onClick={() => setAction({ kind: 'adjust', seller: b })}>±</button>
+                <button className="label me-4 underline underline-offset-4" onClick={() => setAction({ kind: 'adjust', seller: b })}>±</button>
+                <a href={`/api/admin/finance/sellers/${b._id}/statement/pdf`} download className="label me-4 underline underline-offset-4">PDF</a>
+                <a href={`/api/admin/finance/sellers/${b._id}/statement/xlsx`} download className="label underline underline-offset-4">XLSX</a>
               </td>
             </tr>
           ))}

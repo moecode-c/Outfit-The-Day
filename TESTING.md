@@ -16,7 +16,7 @@ Reports: the Playwright HTML report is uploaded as a build artifact on every run
 
 ## Run it locally
 
-Needs MongoDB on `localhost:27017`. Uses a separate `otd_test` database, API on `:4100` and web on `:3100`, so your dev data and dev servers are untouched.
+Needs MongoDB on `localhost:27017`. Uses a separate `otd_test` database, API on `:4100` and web on `:3100` (set `TEST_WEB_PORT` if something else uses 3100), so your dev data and dev servers are untouched.
 
 ```bash
 pnpm test:all

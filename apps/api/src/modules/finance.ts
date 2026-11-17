@@ -1,11 +1,14 @@
-import { BadRequestException, Body, Controller, Get, Injectable, Logger, Module, NotFoundException, Param, Post, Query } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Injectable, Logger, Module, NotFoundException, Param, Post, Query, Res } from '@nestjs/common';
+import type { Response } from 'express';
 import { InjectModel } from '@nestjs/mongoose';
 import { Cron } from '@nestjs/schedule';
 import { Model, Types } from 'mongoose';
 import { z } from 'zod';
 import { AdminPerm, AuthUser, CurrentUser, Roles } from '../common/auth';
 import { addDays, egp, randomCode, Zod, zId } from '../common/util';
+import { sendDownload } from '../common/exports';
 import { SettingsService } from '../db/settings.service';
+import { commissionInvoicePdf, statementPdf, statementXlsx } from './documents';
 import { FilesService } from './files';
 import { NotifyService } from './notify';
 
@@ -91,6 +94,14 @@ export class FinanceService {
       payments,
       platformInstapay: await this.settings.get('platformInstapay'),
     };
+  }
+
+  /** Statement download as PDF or XLSX. */
+  async sendStatement(res: Response, seller: any, format: string) {
+    if (format !== 'pdf' && format !== 'xlsx') throw new BadRequestException('Format must be pdf or xlsx');
+    const st = await this.statement(seller._id);
+    const body = format === 'pdf' ? await statementPdf(seller, st) : await statementXlsx(seller, st);
+    sendDownload(res, body, format, `otd-statement-${seller.slug ?? seller._id}-${new Date().toISOString().slice(0, 10)}`);
   }
 
   /* ───────── billing cycle ───────── */
@@ -257,6 +268,11 @@ export class SellerFinanceController {
     return p;
   }
 
+  @Get('statement/:format')
+  async statementFile(@CurrentUser() u: AuthUser, @Param('format') format: string, @Res() res: Response) {
+    await this.f.sendStatement(res, await this.seller(u), format);
+  }
+
   @Get('invoices/:id')
   async invoice(@CurrentUser() u: AuthUser, @Param('id') id: string) {
     const s = await this.seller(u);
@@ -264,6 +280,12 @@ export class SellerFinanceController {
     if (!inv) throw new NotFoundException();
     const entries = await this.f.ledger.find({ invoice: id }).populate('subOrder', 'number deliveredAt itemsTotal').lean();
     return { invoice: inv, entries, seller: s };
+  }
+
+  @Get('invoices/:id/pdf')
+  async invoicePdf(@CurrentUser() u: AuthUser, @Param('id') id: string, @Res() res: Response) {
+    const data = await this.invoice(u, id);
+    sendDownload(res, await commissionInvoicePdf(data), 'pdf', `otd-commission-${(data.invoice).number}`);
   }
 }
 
@@ -293,6 +315,14 @@ export class AdminFinanceController {
   }
 
   @AdminPerm('finance')
+  @Get('sellers/:id/statement/:format')
+  async statementFile(@Param('id') id: string, @Param('format') format: string, @Res() res: Response) {
+    const s = await this.f.sellers.findById(id).lean<any>();
+    if (!s) throw new NotFoundException();
+    await this.f.sendStatement(res, s, format);
+  }
+
+  @AdminPerm('finance')
   @Get('invoices')
   invoices(@Query('status') status?: string) {
     return this.f.invoices.find(status ? { status } : {}).sort({ createdAt: -1 }).limit(300).populate('seller', 'storeName').lean();
@@ -305,6 +335,13 @@ export class AdminFinanceController {
     if (!inv) throw new NotFoundException();
     const entries = await this.f.ledger.find({ invoice: id }).populate('subOrder', 'number deliveredAt itemsTotal').lean();
     return { invoice: inv, entries, seller: inv.seller };
+  }
+
+  @AdminPerm('finance')
+  @Get('invoices/:id/pdf')
+  async invoicePdf(@Param('id') id: string, @Res() res: Response) {
+    const data = await this.invoice(id);
+    sendDownload(res, await commissionInvoicePdf(data), 'pdf', `otd-commission-${(data.invoice).number}`);
   }
 
   @AdminPerm('finance')

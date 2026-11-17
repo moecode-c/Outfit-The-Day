@@ -9,14 +9,21 @@ export const USERS = {
 } as const;
 export type Who = keyof typeof USERS;
 
+/** CSRF header for state-changing API calls (GET /api/auth/csrf also sets the otd_csrf cookie). */
+export async function csrf(req: APIRequestContext): Promise<Record<string, string>> {
+  const r = await req.get('/api/auth/csrf');
+  expect(r.status(), 'csrf token').toBe(200);
+  return { 'x-csrf-token': (await r.json()).token };
+}
+
 /** Log in through the API proxy; cookies land in the page's browser context. */
 export async function login(page: Page, who: Who) {
-  const r = await page.request.post('/api/auth/login', { data: USERS[who] });
+  const r = await page.request.post('/api/auth/login', { data: USERS[who], headers: await csrf(page.request) });
   expect(r.status(), `login ${who}`).toBe(200);
 }
 
 export async function api<T = any>(req: APIRequestContext, method: 'GET' | 'POST' | 'PUT', path: string, data?: unknown): Promise<T> {
-  const r = await req.fetch('/api' + path, { method, data });
+  const r = await req.fetch('/api' + path, { method, data, headers: method === 'GET' ? {} : await csrf(req) });
   expect(r.status(), `${method} ${path}: ${await r.text().catch(() => '')}`).toBeLessThan(300);
   return r.json();
 }

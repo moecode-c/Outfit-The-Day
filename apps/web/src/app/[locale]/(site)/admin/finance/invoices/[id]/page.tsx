@@ -7,5 +7,5 @@ import { api } from '@/lib/api';
 export default function AdminInvoice() {
   const { id } = useParams<{ id: string }>();
   const { data } = useLoad<any>(() => api(`/admin/finance/invoices/${id}`), [id]);
-  return data ? <InvoiceView data={data} /> : <Loading />;
+  return data ? <InvoiceView data={data} pdfUrl={`/api/admin/finance/invoices/${id}/pdf`} /> : <Loading />;
 }

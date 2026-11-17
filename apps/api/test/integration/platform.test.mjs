@@ -93,3 +93,35 @@ describe('file uploads', () => {
     assert.equal((await owner.get('/files/private/..%2F..%2Fpackage.json')).status, 404, 'no path traversal');
   });
 });
+
+describe('csrf', () => {
+  it('rejects state-changing requests without the double-submit token', async () => {
+    const bare = client({ csrf: false });
+    const r = await bare.post('/auth/login', { identifier: 'customer@otd.test', password: 'Customer123!' });
+    assert.equal(r.status, 403);
+    assert.equal(r.data.code, 'CSRF');
+    assert.match(r.headers.get('set-cookie') ?? '', /otd_csrf=[a-f0-9]{64}/, 'hands out a token to retry with');
+  });
+
+  it('rejects a token that does not match the cookie', async () => {
+    const c = await as('customer');
+    const r = await c.post('/cart/price', { items: [] }, { headers: { 'x-csrf-token': 'f'.repeat(64) } });
+    assert.equal(r.status, 403);
+  });
+
+  it('accepts the matching token, and GETs never need one', async () => {
+    const c = await as('customer');
+    assert.ok((await c.post('/cart/price', { items: [] })).status < 400);
+    const bare = client({ csrf: false });
+    assert.equal((await bare.get('/products?limit=1')).status, 200);
+  });
+
+  it('serves the token at /auth/csrf, readable by page scripts', async () => {
+    const c = client({ csrf: false });
+    const r = await c.get('/auth/csrf');
+    assert.equal(r.status, 200);
+    assert.match(r.data.token, /^[a-f0-9]{64}$/);
+    assert.equal(c.jar.get('otd_csrf'), r.data.token);
+    assert.doesNotMatch(r.headers.get('set-cookie'), /httponly/i);
+  });
+});

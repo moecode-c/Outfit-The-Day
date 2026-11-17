@@ -4,14 +4,17 @@ import { Button } from '@/components/ui';
 import { date, money, tx } from '@/lib/format';
 
 /** Printable commission invoice (used by both the seller hub and the admin panel). */
-export function InvoiceView({ data }: { data: { invoice: any; entries: any[]; seller: any } }) {
+export function InvoiceView({ data, pdfUrl }: { data: { invoice: any; entries: any[]; seller: any }; pdfUrl: string }) {
   const t = useTranslations('seller');
   const tc = useTranslations('common');
   const locale = useLocale();
   const { invoice: i, entries, seller } = data;
   return (
     <div className="mx-auto max-w-3xl">
-      <div className="no-print mb-8 flex justify-end"><Button size="sm" variant="outline" onClick={() => window.print()}>{tc('print')}</Button></div>
+      <div className="no-print mb-8 flex justify-end gap-3">
+        <a href={pdfUrl} download className="label border border-ink px-4 py-2 hover:bg-ink hover:text-canvas text-[11px]">{tc('downloadPdf')} ↓</a>
+        <Button size="sm" variant="outline" onClick={() => window.print()}>{tc('print')}</Button>
+      </div>
       <div className="border border-line p-8 print:border-0 print:p-0">
         <div className="flex items-start justify-between border-b border-ink pb-6">
           <div><p className="font-display text-4xl">OTD</p><p className="label mt-1 text-muted">{t('invoice')} · {t('commissionTotal')}</p></div>

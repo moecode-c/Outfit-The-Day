@@ -12,7 +12,9 @@ import {
   Param,
   Post,
   Query,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { InjectModel } from '@nestjs/mongoose';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Model, Types } from 'mongoose';
@@ -20,7 +22,9 @@ import { z } from 'zod';
 import { AdminPerm, AuthUser, CurrentUser, Public, Roles } from '../common/auth';
 import { allocateCoupon, productDerived, variantPricing } from '../common/pricing';
 import { addDays, addHours, egp, escapeRegex, paginate, randomCode, Zod, zId } from '../common/util';
+import { sendDownload } from '../common/exports';
 import { SettingsService } from '../db/settings.service';
+import { orderInvoicePdf } from './documents';
 import { FilesService } from './files';
 import { FinanceModule, FinanceService } from './finance';
 import { NotifyService } from './notify';
@@ -476,13 +480,24 @@ export class CustomerOrdersController {
       .lean();
   }
 
-  @Get('orders/:number')
-  async one(@CurrentUser() u: AuthUser, @Param('number') number: string) {
+  private async ownOrder(u: AuthUser, number: string) {
     const order = await this.o.orders
       .findOne({ number, customer: u.id })
       .populate({ path: 'subOrders', populate: { path: 'seller', select: 'storeName slug logo phone email instapayHandle' } })
       .lean<any>();
     if (!order) throw new NotFoundException();
+    return order;
+  }
+
+  /** The printable invoice as a generated PDF. */
+  @Get('orders/:number/invoice/pdf')
+  async invoicePdf(@CurrentUser() u: AuthUser, @Param('number') number: string, @Res() res: Response) {
+    sendDownload(res, await orderInvoicePdf(await this.ownOrder(u, number)), 'pdf', `otd-invoice-${number}`);
+  }
+
+  @Get('orders/:number')
+  async one(@CurrentUser() u: AuthUser, @Param('number') number: string) {
+    const order = await this.ownOrder(u, number);
     const returns = await this.o.returns.find({ subOrder: { $in: order.subOrders.map((s: any) => s._id) } }).lean();
     const window = await this.o.settings.get('returnWindowDays');
     return { ...order, returns, returnWindowDays: window };

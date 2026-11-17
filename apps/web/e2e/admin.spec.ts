@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { api, login, uniq, watchErrors } from './helpers';
+import { api, csrf, login, uniq, watchErrors } from './helpers';
 
 test.describe('admin', () => {
   test('approves a pending product, which then goes live in the shop', async ({ browser, page }) => {
@@ -14,7 +14,7 @@ test.describe('admin', () => {
       '89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d49444154789c6360000002000154a24f5d0000000049454e44ae426082',
       'hex',
     );
-    const img = await seller.request.post('/api/files?visibility=public', { multipart: { file: { name: 'shirt.png', mimeType: 'image/png', buffer: png } } });
+    const img = await seller.request.post('/api/files?visibility=public', { headers: await csrf(seller.request), multipart: { file: { name: 'shirt.png', mimeType: 'image/png', buffer: png } } });
     expect(img.status()).toBe(201);
     const { url } = await img.json();
     const created = await api(seller.request, 'POST', '/seller/products', {

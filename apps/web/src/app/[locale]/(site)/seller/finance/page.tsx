@@ -21,7 +21,17 @@ export default function SellerFinance() {
   const owed = d.balance > 0;
   return (
     <>
-      <PageTitle actions={owed && <Button size="sm" onClick={() => setPaying(true)}>{t('payCommission')}</Button>}>{t('finance')}</PageTitle>
+      <PageTitle
+        actions={
+          <div className="flex flex-wrap gap-3">
+            <a href="/api/seller/finance/statement/pdf" download className="label border border-ink px-4 py-2 hover:bg-ink hover:text-canvas self-center">{tc('downloadPdf')} ↓</a>
+            <a href="/api/seller/finance/statement/xlsx" download className="label border border-ink px-4 py-2 hover:bg-ink hover:text-canvas self-center">{tc('downloadXlsx')} ↓</a>
+            {owed && <Button size="sm" onClick={() => setPaying(true)}>{t('payCommission')}</Button>}
+          </div>
+        }
+      >
+        {t('finance')}
+      </PageTitle>
       <Stats>
         <Stat label={d.balance < 0 ? t('credit') : t('balance')} value={money(Math.abs(d.balance), locale)} />
         <Stat label={t('commissionTotal')} value={money(d.totals.commission, locale)} />

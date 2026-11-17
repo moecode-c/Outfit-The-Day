@@ -19,7 +19,16 @@ export default function AdminReports() {
   const { data, loading } = useLoad<{ header: string[]; rows: any[][] }>(() => api(`/admin/reports/${kind}?${query}`), [kind, query]);
   return (
     <>
-      <PageTitle actions={<a href={`/api/admin/reports/${kind}?${query}&format=csv`} className="label self-center border border-ink px-4 py-2 hover:bg-ink hover:text-canvas">{t('exportCsv')} ↓</a>}>{t('reports')}</PageTitle>
+      <PageTitle
+        actions={
+          <div className="flex flex-wrap gap-3">
+            <a href={`/api/admin/reports/${kind}?${query}&format=xlsx`} download className="label border border-ink px-4 py-2 hover:bg-ink hover:text-canvas self-center">{t('exportXlsx')} ↓</a>
+            <a href={`/api/admin/reports/${kind}?${query}&format=csv`} download className="label border border-ink px-4 py-2 hover:bg-ink hover:text-canvas self-center">{t('exportCsv')} ↓</a>
+          </div>
+        }
+      >
+        {t('reports')}
+      </PageTitle>
       <Tabs value={kind} onChange={setKind} options={(['sales', 'commission', 'coupons', 'returns'] as const).map((k) => ({ value: k, label: t(`report.${k}` as any) }))} />
       <div className="mb-8 flex flex-wrap items-end gap-4">
         <Field label={tc('from')}><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></Field>

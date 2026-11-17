@@ -12,9 +12,11 @@ const ok = (cond, msg) => {
 function client() {
   let cookie = '';
   const call = async (method, path, body, raw) => {
+    if (method !== 'GET' && !/otd_csrf=/.test(cookie)) await call('GET', '/auth/csrf');
+    const csrf = method !== 'GET' ? { 'x-csrf-token': cookie.match(/otd_csrf=([a-f0-9]+)/)?.[1] ?? '' } : {};
     const r = await fetch(API + path, {
       method,
-      headers: { cookie, ...(raw ? {} : { 'content-type': 'application/json' }) },
+      headers: { cookie, ...(raw ? {} : { 'content-type': 'application/json' }), ...csrf },
       body: raw ?? (body ? JSON.stringify(body) : undefined),
     });
     const set = r.headers.getSetCookie?.() ?? [];
@@ -189,6 +191,9 @@ ok(run.created >= 2, 'invoices generated: ' + run.created);
 stmt = await kemet.get('/seller/finance');
 const inv = stmt.invoices[0];
 ok(inv && inv.amountDue > 0, 'kemet invoice due ' + inv.amountDue);
+ok(String(await kemet.get(`/seller/finance/invoices/${inv._id}/pdf`)).startsWith('%PDF-'), 'commission invoice downloads as PDF (seller)');
+ok(String(await admin.get(`/admin/finance/invoices/${inv._id}/pdf`)).startsWith('%PDF-'), 'commission invoice downloads as PDF (admin)');
+await nour.expectFail(() => nour.get(`/seller/finance/invoices/${inv._id}/pdf`), 'another brand cannot download that invoice');
 const payProof = await kemet.upload('private');
 const pay = await kemet.post('/seller/finance/payments', { invoice: inv._id, amount: inv.amountDue, file: payProof.url, referenceNo: 'KMT' + Date.now() });
 await admin.post(`/admin/finance/payments/${pay._id}/confirm`, {});

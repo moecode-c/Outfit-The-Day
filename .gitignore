@@ -14,3 +14,6 @@ coverage
 # Runtime uploads (may contain private documents)
 apps/api/uploads/
 *.tsbuildinfo
+
+# Database backups (scripts/backup.mjs)
+backups/

@@ -17,26 +17,29 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { InjectModel } from '@nestjs/mongoose';
 import { randomUUID } from 'crypto';
-import { promises as fs } from 'fs';
 import { memoryStorage } from 'multer';
 import { Model } from 'mongoose';
-import * as path from 'path';
-import type { Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 import { AuthUser, CurrentUser } from '../common/auth';
+import { createStorage, Storage } from './storage';
+
+export { uploadRoot } from './storage';
 
 const IMAGE_TYPES: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/avif': 'avif' };
 const DOC_TYPES: Record<string, string> = { ...IMAGE_TYPES, 'application/pdf': 'pdf' };
 const MAX_BYTES = 8 * 1024 * 1024;
+const MIME_BY_EXT: Record<string, string> = Object.fromEntries(Object.entries(DOC_TYPES).map(([m, e]) => [e, m]));
 
-export const uploadRoot = () => path.resolve(process.env.UPLOAD_DIR ?? './uploads');
+const SAFE_KEY = /^[0-9a-f-]{36}\.(jpg|png|webp|avif|pdf)$/;
 
 /**
- * Local-disk storage for dev. Public images: /uploads/<key>. Private docs and payment proofs:
- * /api/files/private/<key>, readable only by owner, admins and users added to visibleTo.
- * Swap writeFile/readFile for Cloudflare R2 in production.
+ * Uploads. Bytes go to local disk (dev) or Cloudflare R2 (when R2_BUCKET is set), see storage.ts.
+ * Public images: /uploads/<key>. Private docs and payment proofs: /api/files/private/<key>,
+ * readable only by the owner, admins and users added to visibleTo.
  */
 @Injectable()
 export class FilesService {
+  readonly storage: Storage = createStorage();
   constructor(@InjectModel('File') private readonly files: Model<any>) {}
 
   async save(file: Express.Multer.File, owner: string, visibility: 'public' | 'private') {
@@ -47,9 +50,7 @@ export class FilesService {
     if (file.size > MAX_BYTES) throw new BadRequestException('File too large (max 8MB)');
     if (!this.sniff(file.buffer, ext)) throw new BadRequestException('File content does not match its type');
     const key = `${randomUUID()}.${ext}`;
-    const dir = path.join(uploadRoot(), visibility);
-    await fs.mkdir(dir, { recursive: true });
-    await fs.writeFile(path.join(dir, key), file.buffer);
+    await this.storage.put(visibility, key, file.buffer, file.mimetype);
     await this.files.create({ key, owner, visibility, mime: file.mimetype, size: file.size, visibleTo: [] });
     return { key, url: visibility === 'public' ? `/uploads/${key}` : `/api/files/private/${key}` };
   }
@@ -87,7 +88,27 @@ export class FilesService {
     const ok =
       user.role === 'ADMIN' || String(f.owner) === user.id || (f.visibleTo ?? []).some((v: any) => String(v) === user.id);
     if (!ok) throw new ForbiddenException();
-    return { path: path.join(uploadRoot(), 'private', path.basename(key)), mime: f.mime };
+    const obj = await this.storage.get('private', key);
+    if (!obj) throw new NotFoundException();
+    return { ...obj, mime: f.mime };
+  }
+
+  /** Express handler for GET /uploads/:key (public images, same URL for disk and R2). */
+  servePublic() {
+    return async (req: Request, res: Response, next: NextFunction) => {
+      const key = req.path.replace(/^\//, '');
+      if (!SAFE_KEY.test(key)) return res.status(404).end();
+      try {
+        const obj = await this.storage.get('public', key);
+        if (!obj) return res.status(404).end();
+        res.setHeader('Content-Type', obj.mime ?? MIME_BY_EXT[key.split('.').pop()!]);
+        if (obj.size) res.setHeader('Content-Length', String(obj.size));
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        obj.body.on('error', next).pipe(res);
+      } catch (e) {
+        next(e);
+      }
+    };
   }
 }
 
@@ -106,7 +127,8 @@ export class FilesController {
     const f = await this.files.readPrivate(key, u);
     res.setHeader('Content-Type', f.mime);
     res.setHeader('Cache-Control', 'private, max-age=300');
-    res.sendFile(f.path);
+    if (f.size) res.setHeader('Content-Length', String(f.size));
+    f.body.pipe(res);
   }
 }
 

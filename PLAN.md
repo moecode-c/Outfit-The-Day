@@ -15,7 +15,7 @@ Based on *Multi-Vendor Marketplace MVP Scope and Feature Specification* (MVP 1.0
 | Repo | pnpm monorepo: `apps/web`, `apps/api`, `packages/shared` |
 | Team | Solo, experienced developer + Claude |
 | Market | Egypt, EGP, **English default**, Arabic (RTL) second language |
-| Hosting | Web → Vercel · API → Railway/Render · DB → MongoDB Atlas · Files → local disk in dev, Cloudflare R2 in prod |
+| Hosting | Web → Vercel · API → Railway/Render · DB → MongoDB Atlas · Files → local disk in dev, Cloudflare R2 in prod (switched on by the `R2_*` settings) |
 | Design | **Editorial / magazine**, premium, **strict black and white monochrome** (no accent color) |
 | Premium UI | Smooth scroll and motion, full-bleed editorial hero, quick-view and slide-out bag, dark mode toggle |
 | Fashion features | Size guides per brand · color swatches with per-color photos · Women / Men / Kids navigation · "Complete the Look" outfits |
@@ -42,15 +42,17 @@ Based on *Multi-Vendor Marketplace MVP Scope and Feature Specification* (MVP 1.0
 │ Next.js web  │ ─────────────▶ │  NestJS API   │ ─────────▶ │ MongoDB (Atlas) │
 │ (Vercel)     │ ◀───────────── │ (Railway /    │            └─────────────────┘
 │ SSR          │  JWT cookies   │  Render)      │ ──▶ @nestjs/schedule cron jobs (in-process)
-└──────────────┘                │               │ ──▶ Files: local disk now, Cloudflare R2 planned
+└──────────────┘                │               │ ──▶ Files: local disk (dev) or Cloudflare R2
                                 │               │ ──▶ SMTP email (falls back to the admin outbox)
                                 └───────────────┘
 ```
 
-- **Auth**: JWT access token (15 min) and refresh token (30 days) in httpOnly secure cookies, argon2 password hashing, Google OAuth (planned, not built yet), and role guards (`CUSTOMER`, `SELLER`, `ADMIN`) plus admin permission flags.
+- **Auth**: JWT access token (15 min) and refresh token (30 days) in httpOnly secure cookies, argon2 password hashing, double-submit CSRF tokens (`otd_csrf` cookie echoed in `x-csrf-token`), and role guards (`CUSTOMER`, `SELLER`, `ADMIN`) plus admin permission flags.
 - **Background jobs (@nestjs/schedule cron, no Redis)**: discount start/end refresh, InstaPay proof timeouts, weekly or monthly commission invoices, overdue reminders and auto-suspend, flags when a seller misses a return deadline.
 - **Search**: a normalized `searchText` field on each product with Arabic folding (unify the alef forms, ة→ه, ى→ي, strip diacritics), matched token by token with escaped regexes. Meilisearch is the Phase 2 upgrade.
-- **Files**: uploads are type-sniffed (JPEG/PNG/WebP/PDF) and stored on local disk (`UPLOAD_DIR`). Product images are public; ID documents and payment screenshots are **private** and only served to signed-in users allowed to see them. Moving storage to Cloudflare R2 is still to do (the swap point is in `apps/api/src/modules/files.ts`).
+- **Files**: uploads are type-sniffed (JPEG/PNG/WebP/PDF) and stored on local disk (`UPLOAD_DIR`) or, when `R2_BUCKET` is set, in Cloudflare R2 (`apps/api/src/modules/storage.ts`). Product images are public (`/uploads/<key>`, the same URL for both); ID documents and payment screenshots are **private** and only served to signed-in users allowed to see them.
+- **Documents**: PDF order invoices, commission invoices and statements (pdfkit; English, with Arabic when a name has no English), XLSX statements and reports (exceljs).
+- **Ops**: production config checks at start-up (`src/common/env.ts`); `pnpm --filter api backup` / `restore` for logical database backups (optionally copied to R2), alongside Atlas Cloud Backup.
 - **i18n**: next-intl with `/en` and `/ar` routes, `dir="rtl"` for Arabic, Tailwind logical properties (`ms-`, `pe-`), and every user-facing text field stored as `{en, ar}` with fallback to the other language.
 - **Money**: stored as integer **piasters** (1 EGP = 100). Prices, commission % and coupons are snapshotted onto the order when it is placed.
 
@@ -127,7 +129,7 @@ Customer pays the seller `items − coupon + shipping`. When the order is delive
 
 **Seller (brand)**: application and approval, store profile, size guides, products with colors × sizes variants and per-color images (every product goes through admin approval), discounts, outfits/looks, order pipeline (confirm → processing → shipped with tracking → delivered, InstaPay proof review, cash-on-delivery collection, packing slip), returns, finance (ledger, invoices, pay commission with a proof), dashboard with a 30-day chart.
 
-**Admin**: dashboard and alerts, seller approvals, suspensions and commission overrides, product approval queue, review moderation, categories and departments, coupons (global and per seller), commission settings and billing cycle, verifying commission payments and recording cash payments, order and dispute oversight, user blocking, CMS (banners, home sections, lookbook features, static pages, shipping zones, email templates), reports with CSV export (XLSX planned), admin users and permissions, global settings.
+**Admin**: dashboard and alerts, seller approvals, suspensions and commission overrides, product approval queue, review moderation, categories and departments, coupons (global and per seller), commission settings and billing cycle, verifying commission payments and recording cash payments, order and dispute oversight, user blocking, CMS (banners, home sections, lookbook features, static pages, shipping zones, email templates), reports with CSV and XLSX export, admin users and permissions, global settings.
 
 ## 7. Delivery phases
 
@@ -136,19 +138,16 @@ Status as of November 2026: ✅ done · 🟡 done except the items in bold.
 | # | Phase | Deliverables | Status |
 |---|---|---|---|
 | 0 | **Setup** | Monorepo, Next.js and NestJS apps, MongoDB + Mongoose (no Docker), shared package, lint/format, env files, CI | ✅ GitHub Actions CI with lint, unit, integration and browser tests (see `TESTING.md`) |
-| 1 | **Foundation** | Design system, i18n plus RTL, layout, auth (register, login, verify, reset, Google), roles and guards, governorates/cities seed, categories and departments | 🟡 **Google sign-in** |
-| 2 | **Sellers and catalog** | Seller application and approval, store profile, size guides, product CRUD with colors/sizes/images, admin approval queue, seller discounts, looks | 🟡 Uploads go to local disk; **R2 not wired up** |
+| 1 | **Foundation** | Design system, i18n plus RTL, layout, auth (register, login, verify, reset), roles and guards, governorates/cities seed, categories and departments | ✅ (Google sign-in dropped from the MVP) |
+| 2 | **Sellers and catalog** | Seller application and approval, store profile, size guides, product CRUD with colors/sizes/images, admin approval queue, seller discounts, looks | ✅ Local disk in dev, Cloudflare R2 in production |
 | 3 | **Shopping** | Editorial home, department and category pages, search plus filters, product page, quick-view, wishlist, bag drawer, checkout, multi-seller orders, COD and InstaPay proof flow, stock reservation | ✅ |
-| 4 | **Operations** | Seller order pipeline, tracking, cancellations, returns, reviews, notifications (email + in-site bell), invoices, seller dashboard | 🟡 Invoices are printable pages, **not generated PDFs** |
-| 5 | **Money and promotions** | Coupons, commission engine and ledger, coupon credits, invoices per cycle, seller payments and admin verification, late-payment jobs, statements | 🟡 **No PDF/XLSX statement export** |
-| 6 | **Admin and launch** | Admin panels, CMS, reports and exports, admin permissions, SEO, performance, security review, backups, legal pages, deployment | 🟡 Panels, CMS, CSV reports, permissions, rate limits, file checks and SEO (`sitemap.xml`, `robots.txt`, per-page canonical + hreflang) are done. **Still to do: CSRF tokens (SameSite cookies only today), backups, final legal text, deployment** |
+| 4 | **Operations** | Seller order pipeline, tracking, cancellations, returns, reviews, notifications (email + in-site bell), invoices, seller dashboard | ✅ Printable pages plus generated PDF invoices |
+| 5 | **Money and promotions** | Coupons, commission engine and ledger, coupon credits, invoices per cycle, seller payments and admin verification, late-payment jobs, statements | ✅ PDF/XLSX statements, PDF commission invoices |
+| 6 | **Admin and launch** | Admin panels, CMS, reports and exports, admin permissions, SEO, performance, security review, backups, legal pages, deployment | 🟡 Panels, CMS, CSV/XLSX reports, permissions, rate limits, file checks, SEO, CSRF tokens, production config checks and backup scripts are done. **Still to do: final legal text, deployment** |
 
 ### Remaining before launch
-1. Google sign-in (users have a `googleId` field; there is no OAuth flow yet).
-2. Cloudflare R2 for uploads (replace the disk read/write in `apps/api/src/modules/files.ts`).
-3. Exports: XLSX reports, PDF invoices and statements.
-4. Security: CSRF tokens on state-changing requests, production secrets, database backups (Atlas).
-5. Deployment: web on Vercel, API on Railway/Render, MongoDB Atlas, domain, SMTP account. Set `SITE_URL` on the web app to the real domain, since canonical URLs, hreflang and the sitemap are built from it.
+1. Deployment: web on Vercel, API on Railway/Render, MongoDB Atlas, domain, SMTP account. Set `SITE_URL` on the web app to the real domain, since canonical URLs, hreflang and the sitemap are built from it. On the API set `NODE_ENV=production`, real JWT secrets, `WEB_ORIGIN` and the `R2_*` settings (it will not start without them), turn on Atlas Cloud Backup, and schedule `pnpm --filter api backup`.
+2. Final legal text (terms, privacy, returns, seller agreement) reviewed by a lawyer.
 
 ## 8. Phase 2+ (out of the MVP)
 Payment gateway (Paymob/Fawry), automatic payment verification, payouts, courier integration, native apps, buyer–seller chat, AI recommendations and visual search, virtual try-on, Meilisearch, seller ads, loyalty points, seller-created coupons, security deposits, fraud detection.
