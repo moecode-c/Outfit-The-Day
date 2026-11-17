@@ -131,10 +131,12 @@ async function main() {
   const OLIVE = C('Olive', 'زيتي', '#5b5e3c', 'green');
   const RED = C('Red', 'أحمر', '#b3261e', 'red');
   const EMERALD = C('Emerald', 'زمردي', '#1f6b4f', 'green');
+  const BLUSH = C('Blush', 'وردي', '#e3a1b4', 'pink');
   // Real photos for the colored options, keyed by color name; other colors keep the placeholders.
   const PHOTOS: Record<string, string[]> = {
     'dress:Red': ['1595777457583-95e059d581b8', '1612336307429-8a898d10e223', '1622460432096-f6b772409e1f'],
     'dress:Emerald': ['1631084675579-20db768ae08a', '1685703203919-0c2cfc893c60', '1645626331099-71776e7b31a0'],
+    'hijab:Blush': ['1601869610377-0ccf555ed20c', '1617183835731-2d5b33be9f2a', '1772625717865-a6300f44543e'],
   };
 
   type PDef = { key?: string; s: any; cat: string; dep: string; en: string; ar: string; price: number; colors: any[]; sizes: string[]; guide?: any; disc?: any; material?: [string, string] };
@@ -143,7 +145,7 @@ async function main() {
     { s: nour, cat: 'modest', dep: 'WOMEN', en: 'Linen Abaya Coat', ar: 'معطف عباية من الكتان', price: 245000, colors: [WHITE, BLACK], sizes: SIZES.apparel, guide: guides.nour, disc: { type: 'PERCENT', value: 20 }, material: ['Linen blend', 'مزيج كتان'] },
     { s: nour, cat: 'tops', dep: 'WOMEN', en: 'Silk-Touch Shirt', ar: 'قميص بملمس الحرير', price: 99000, colors: [WHITE, GREY], sizes: SIZES.apparel, guide: guides.nour },
     { s: nour, cat: 'trousers', dep: 'WOMEN', en: 'Wide-Leg Tailored Trousers', ar: 'بنطال واسع مفصّل', price: 139000, colors: [BLACK, SAND], sizes: SIZES.apparel, guide: guides.nour },
-    { s: nour, cat: 'scarves', dep: 'WOMEN', en: 'Modal Hijab', ar: 'طرحة مودال', price: 32000, colors: [BLACK, SAND, WHITE], sizes: SIZES.one },
+    { key: 'hijab', s: nour, cat: 'scarves', dep: 'WOMEN', en: 'Modal Hijab', ar: 'طرحة مودال', price: 32000, colors: [BLUSH, BLACK, SAND, WHITE], sizes: SIZES.one },
     { s: nour, cat: 'bags', dep: 'WOMEN', en: 'Structured Leather Tote', ar: 'حقيبة جلد منظّمة', price: 329000, colors: [BLACK], sizes: SIZES.one, disc: { type: 'FIXED_PRICE', value: 279000 } },
     { s: nour, cat: 'heels', dep: 'WOMEN', en: 'Square-Toe Slingback', ar: 'حذاء بكعب ومقدمة مربعة', price: 175000, colors: [BLACK, WHITE], sizes: ['36', '37', '38', '39', '40', '41'] },
     { s: nour, cat: 'knitwear', dep: 'WOMEN', en: 'Ribbed Merino Cardigan', ar: 'كارديجان صوف ميرينو', price: 155000, colors: [GREY, SAND], sizes: SIZES.apparel, guide: guides.nour },
