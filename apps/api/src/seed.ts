@@ -130,7 +130,7 @@ async function main() {
   const NAVY = C('Navy', 'كحلي', '#1f2a44', 'navy');
   const OLIVE = C('Olive', 'زيتي', '#5b5e3c', 'green');
 
-  type PDef = { s: any; cat: string; dep: string; en: string; ar: string; price: number; colors: any[]; sizes: string[]; guide?: any; disc?: any; material?: [string, string] };
+  type PDef = { key?: string; s: any; cat: string; dep: string; en: string; ar: string; price: number; colors: any[]; sizes: string[]; guide?: any; disc?: any; material?: [string, string] };
   const defs: PDef[] = [
     { s: nour, cat: 'dresses', dep: 'WOMEN', en: 'Pleated Column Dress', ar: 'فستان طويل بكسرات', price: 189000, colors: [BLACK, SAND], sizes: SIZES.apparel, guide: guides.nour, material: ['100% viscose', '١٠٠٪ فسكوز'] },
     { s: nour, cat: 'modest', dep: 'WOMEN', en: 'Linen Abaya Coat', ar: 'معطف عباية من الكتان', price: 245000, colors: [WHITE, BLACK], sizes: SIZES.apparel, guide: guides.nour, disc: { type: 'PERCENT', value: 20 }, material: ['Linen blend', 'مزيج كتان'] },
