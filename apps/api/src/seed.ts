@@ -130,14 +130,16 @@ async function main() {
   const NAVY = C('Navy', 'كحلي', '#1f2a44', 'navy');
   const OLIVE = C('Olive', 'زيتي', '#5b5e3c', 'green');
   const RED = C('Red', 'أحمر', '#b3261e', 'red');
+  const EMERALD = C('Emerald', 'زمردي', '#1f6b4f', 'green');
   // Real photos for the colored options, keyed by color name; other colors keep the placeholders.
   const PHOTOS: Record<string, string[]> = {
     'dress:Red': ['1595777457583-95e059d581b8', '1612336307429-8a898d10e223', '1622460432096-f6b772409e1f'],
+    'dress:Emerald': ['1631084675579-20db768ae08a', '1685703203919-0c2cfc893c60', '1645626331099-71776e7b31a0'],
   };
 
   type PDef = { key?: string; s: any; cat: string; dep: string; en: string; ar: string; price: number; colors: any[]; sizes: string[]; guide?: any; disc?: any; material?: [string, string] };
   const defs: PDef[] = [
-    { key: 'dress', s: nour, cat: 'dresses', dep: 'WOMEN', en: 'Pleated Column Dress', ar: 'فستان طويل بكسرات', price: 189000, colors: [RED, BLACK, SAND], sizes: SIZES.apparel, guide: guides.nour, material: ['100% viscose', '١٠٠٪ فسكوز'] },
+    { key: 'dress', s: nour, cat: 'dresses', dep: 'WOMEN', en: 'Pleated Column Dress', ar: 'فستان طويل بكسرات', price: 189000, colors: [RED, EMERALD, BLACK, SAND], sizes: SIZES.apparel, guide: guides.nour, material: ['100% viscose', '١٠٠٪ فسكوز'] },
     { s: nour, cat: 'modest', dep: 'WOMEN', en: 'Linen Abaya Coat', ar: 'معطف عباية من الكتان', price: 245000, colors: [WHITE, BLACK], sizes: SIZES.apparel, guide: guides.nour, disc: { type: 'PERCENT', value: 20 }, material: ['Linen blend', 'مزيج كتان'] },
     { s: nour, cat: 'tops', dep: 'WOMEN', en: 'Silk-Touch Shirt', ar: 'قميص بملمس الحرير', price: 99000, colors: [WHITE, GREY], sizes: SIZES.apparel, guide: guides.nour },
     { s: nour, cat: 'trousers', dep: 'WOMEN', en: 'Wide-Leg Tailored Trousers', ar: 'بنطال واسع مفصّل', price: 139000, colors: [BLACK, SAND], sizes: SIZES.apparel, guide: guides.nour },
