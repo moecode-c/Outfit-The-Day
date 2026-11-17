@@ -186,7 +186,7 @@ async function main() {
   await M.Look.insertMany([
     { seller: nour._id, title: { en: 'The Quiet Office', ar: 'إطلالة المكتب الهادئة' }, description: { en: 'Soft tailoring for long days.', ar: 'تفصيل ناعم لأيام طويلة.' }, cover: img('look-office', 1200, 1500), products: [products[2]._id, products[3]._id, products[5]._id, products[6]._id], featured: true },
     { seller: kemet._id, title: { en: 'Weekend in Zamalek', ar: 'عطلة في الزمالك' }, description: { en: 'Easy layers, good shoes.', ar: 'طبقات مريحة وحذاء جيد.' }, cover: img('look-zamalek', 1200, 1500), products: [products[8]._id, products[10]._id, products[12]._id], featured: true },
-    { seller: nour._id, title: { en: 'Evening, Simply', ar: 'المساء ببساطة' }, cover: img('look-evening', 1200, 1500), products: [products[0]._id, products[6]._id, products[5]._id] },
+    { seller: nour._id, title: { en: 'Evening, Simply', ar: 'المساء ببساطة' }, cover: us('1527189919029-aeb3d997547d', 1200, 1500), products: [products[0]._id, products[6]._id, products[5]._id] },
   ]);
 
   await M.Banner.insertMany([
