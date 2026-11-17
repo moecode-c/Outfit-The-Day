@@ -135,6 +135,7 @@ async function main() {
   const MUSTARD = C('Mustard', 'خردلي', '#d4a017', 'yellow');
   const SKY = C('Sky', 'سماوي', '#7fa7d6', 'blue');
   const RUST = C('Rust', 'صدئي', '#c4572a', 'orange');
+  const SUN = C('Sunshine', 'أصفر مشمس', '#f2c230', 'yellow');
   // Real photos for the colored options, keyed by color name; other colors keep the placeholders.
   const PHOTOS: Record<string, string[]> = {
     'dress:Red': ['1595777457583-95e059d581b8', '1612336307429-8a898d10e223', '1622460432096-f6b772409e1f'],
@@ -144,6 +145,7 @@ async function main() {
     'heel:Red': ['1670607231621-c00fd76d2387', '1654077813634-9ff6b843caab', '1611233299310-f6276ff55307'],
     'oxford:Sky': ['1624835567150-0c530a20d8cc', '1589310243389-96a5483213a8', '1620012253295-c15cc3e65df4'],
     'crew:Rust': ['1611246164691-97f352683561', '1542735128-a1eb57a8fa0c', '1637868994502-ac06e6f1dbec'],
+    'kidsdress:Sunshine': ['1611003967145-fb3960072424', '1700751616240-e1faf79c2877', '1700751615484-6b4427a1dacd'],
   };
 
   type PDef = { key?: string; s: any; cat: string; dep: string; en: string; ar: string; price: number; colors: any[]; sizes: string[]; guide?: any; disc?: any; material?: [string, string] };
@@ -164,7 +166,7 @@ async function main() {
     { s: kemet, cat: 'loafers', dep: 'MEN', en: 'Penny Loafer', ar: 'حذاء لوفر', price: 219000, colors: [BLACK], sizes: SIZES.shoes },
     { s: kemet, cat: 'belts', dep: 'MEN', en: 'Bridle Leather Belt', ar: 'حزام جلد طبيعي', price: 45000, colors: [BLACK], sizes: ['90', '95', '100', '105'] },
     { s: kemet, cat: 'jewellery', dep: 'UNISEX', en: 'Sterling Signet Ring', ar: 'خاتم فضة', price: 85000, colors: [C('Silver', 'فضي', '#c0c0c0', 'silver')], sizes: ['7', '8', '9', '10'] },
-    { s: mini, cat: 'dresses', dep: 'KIDS', en: 'Smocked Cotton Dress', ar: 'فستان قطن مزموم', price: 59000, colors: [WHITE, SAND], sizes: SIZES.kids, guide: guides.mini },
+    { key: 'kidsdress', s: mini, cat: 'dresses', dep: 'KIDS', en: 'Smocked Cotton Dress', ar: 'فستان قطن مزموم', price: 59000, colors: [SUN, WHITE, SAND], sizes: SIZES.kids, guide: guides.mini },
     { s: mini, cat: 'tops', dep: 'KIDS', en: 'Organic Tee Pack', ar: 'طقم تيشيرتات عضوي', price: 45000, colors: [WHITE, GREY], sizes: SIZES.kids, guide: guides.mini, disc: { type: 'PERCENT', value: 10 } },
     { s: mini, cat: 'outerwear', dep: 'KIDS', en: 'Quilted Puffer', ar: 'جاكيت منفوخ', price: 99000, colors: [NAVY, BLACK], sizes: SIZES.kids, guide: guides.mini },
     { s: mini, cat: 'sneakers', dep: 'KIDS', en: 'Velcro Canvas Sneaker', ar: 'سنيكرز كانفاس بلاصق', price: 52000, colors: [WHITE], sizes: ['26', '28', '30', '32', '34'] },
