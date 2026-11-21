@@ -11,6 +11,7 @@ const pages = async (request: any) => {
 
 for (const locale of ['en', 'ar']) {
   test(`accessibility audit (${locale})`, async ({ page, request }, info) => {
+    test.setTimeout(180_000); // seven pages, each loaded fully and audited
     const results: string[] = [];
     for (const path of await pages(request)) {
       await page.goto(`/${locale}${path}`);

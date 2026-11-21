@@ -72,7 +72,7 @@ export function SignOut() {
   const { logout } = useAuth();
   const router = useRouter();
   return (
-    <button className="label mt-6 text-muted underline-offset-4 hover:underline" onClick={async () => { await logout(); router.push('/'); }}>
+    <button type="button" className="label mt-6 block text-muted underline-offset-4 hover:underline" onClick={async () => { await logout(); router.push('/'); }}>
       {t('signOut')}
     </button>
   );

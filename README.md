@@ -84,7 +84,9 @@ Every push and pull request runs GitHub Actions: lint and type-check, unit tests
 | `R2_ENDPOINT` | api | `https://<account>.r2.cloudflarestorage.com` | Override for any S3-compatible store |
 | `ALLOW_DISK_UPLOADS` | api | unset | Production only: accept disk uploads (only on a persistent disk) |
 | `BACKUP_DIR`, `BACKUP_KEEP` | api | `./backups`, `14` | Where `pnpm --filter api backup` writes, and how many backups it keeps |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | api | unset | Email sending. Without SMTP, emails are kept in the admin outbox |
+| `BREVO_API_KEY` | api | unset | Sends email (verification, password reset, order updates) through the Brevo API. Needs `MAIL_FROM` |
+| `MAIL_FROM` | api | `OTD <no-reply@otd.eg>` | Sender, e.g. `OTD <no-reply@your-domain>`. With Brevo it must be a sender verified in your Brevo account |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` | api | unset | SMTP alternative, used only when `BREVO_API_KEY` is unset. Without either, emails are kept in the admin outbox |
 | `THROTTLE_DISABLED` | api | unset | Tests only: turns off rate limiting. Ignored when `NODE_ENV=production` |
 | `API_URL` | web | `http://localhost:4000` | API address used for server rendering and the `/api` proxy |
 | `SITE_URL` | web | `http://localhost:3000` | Public site URL, used in metadata |
@@ -102,6 +104,8 @@ Before going live, change the demo accounts. In production (`NODE_ENV=production
 - Auth cookies (`otd_at`, `otd_rt`) are httpOnly and SameSite=Lax.
 - CSRF: double-submit token. The API sets a readable `otd_csrf` cookie, and every POST/PUT/PATCH/DELETE must echo it in the `x-csrf-token` header. The web client does this automatically; `GET /api/auth/csrf` returns a token. Requests authenticated only with an `Authorization` header are exempt.
 - Rate limiting, helmet headers, content-sniffed uploads, and private files behind access checks.
+- Password reset: `/forgot` emails a single-use link (stored as a sha256 hash, valid 1 hour, at most one email per account per minute). The answer is the same whether or not the email exists. Resetting signs the account out on every device and sends a "password changed" email. Reset emails are stored redacted in the admin outbox once a provider sends them.
+- Sessions: each signed-in device has its own refresh token (up to 10 per account). Logging out revokes it on the server; changing the password signs out the other devices.
 
 ## Backups
 

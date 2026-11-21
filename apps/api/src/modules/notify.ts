@@ -1,59 +1,59 @@
 import { Controller, Get, Global, Injectable, Logger, Module, Param, Post } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import nodemailer, { Transporter } from 'nodemailer';
 import { AuthUser, CurrentUser } from '../common/auth';
+import { emailLayout, MailSender, senderFromEnv } from '../common/mail';
+
+export { emailLayout };
 
 type T = { en: string; ar: string };
 
-/** Minimal bilingual, monochrome email layout. */
-export function emailLayout(locale: string, heading: string, body: string, cta?: { label: string; url: string }) {
-  const dir = locale === 'ar' ? 'rtl' : 'ltr';
-  return `<!doctype html><html dir="${dir}"><body style="margin:0;background:#fff;font-family:Helvetica,Arial,sans-serif;color:#0a0a0a">
-<div style="max-width:560px;margin:0 auto;padding:40px 24px">
-<div style="font-family:Georgia,serif;font-size:32px;letter-spacing:-1px;margin-bottom:32px">OTD</div>
-<h1 style="font-family:Georgia,serif;font-weight:normal;font-size:26px;margin:0 0 16px">${heading}</h1>
-<div style="font-size:15px;line-height:1.6;color:#404040">${body}</div>
-${cta ? `<a href="${cta.url}" style="display:inline-block;margin-top:28px;background:#0a0a0a;color:#fff;text-decoration:none;padding:14px 28px;font-size:12px;letter-spacing:2px;text-transform:uppercase">${cta.label}</a>` : ''}
-<hr style="border:none;border-top:1px solid #e5e5e5;margin:40px 0 16px"><div style="font-size:11px;color:#a3a3a3">Outfit The Day · Egypt</div>
-</div></body></html>`;
-}
+const REDACTED = '<p>(Content hidden: this email contained a private account link.)</p>';
 
 @Injectable()
 export class NotifyService {
   private readonly log = new Logger('Mail');
-  private transport: Transporter | null = null;
+  private sender: MailSender | null = senderFromEnv();
 
   constructor(
     @InjectModel('Notification') private readonly notifications: Model<any>,
     @InjectModel('Mail') private readonly mails: Model<any>,
     @InjectModel('User') private readonly users: Model<any>,
   ) {
-    if (process.env.SMTP_HOST) {
-      this.transport = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: Number(process.env.SMTP_PORT ?? 587),
-        auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-      });
-    }
+    this.log.log(this.sender ? `Sending email with ${this.sender.name}` : 'No email provider configured: emails go to the admin outbox only');
+  }
+
+  /** Tests only. */
+  setSender(s: MailSender | null) {
+    this.sender = s;
   }
 
   get webUrl() {
-    return process.env.WEB_ORIGIN ?? 'http://localhost:3000';
+    return (process.env.WEB_ORIGIN ?? 'http://localhost:3000').replace(/\/+$/, '');
   }
 
-  /** Raw email. Without SMTP configured it is kept in the outbox (viewable by admin). */
-  async mail(to: string, subject: string, html: string) {
-    const doc = await this.mails.create({ to, subject, html, sent: false });
-    if (!this.transport) {
+  /**
+   * Raw email, recorded in the outbox. Without a provider it stays there (viewable by admins).
+   * `sensitive` emails (password reset links) are stored redacted so the outbox cannot be used to
+   * take over accounts; the full copy is kept only in development when no provider is configured.
+   * Returns true when the provider accepted it.
+   */
+  async mail(to: string, subject: string, html: string, opts: { sensitive?: boolean; tags?: string[] } = {}): Promise<boolean> {
+    const keepFull = !opts.sensitive || (!this.sender && process.env.NODE_ENV !== 'production');
+    const doc = await this.mails.create({ to, subject, html: keepFull ? html : REDACTED, sent: false });
+    if (!this.sender) {
       this.log.log(`[outbox] ${to} · ${subject}`);
-      return;
+      return false;
     }
     try {
-      await this.transport.sendMail({ from: process.env.MAIL_FROM ?? 'OTD <no-reply@otd.eg>', to, subject, html });
+      await this.sender.send({ to, subject, html, tags: opts.tags });
       await this.mails.updateOne({ _id: doc._id }, { sent: true });
+      return true;
     } catch (e) {
-      await this.mails.updateOne({ _id: doc._id }, { error: (e as Error).message });
+      const msg = (e as Error).message;
+      this.log.error(`Could not send "${subject}" to ${to}: ${msg}`);
+      await this.mails.updateOne({ _id: doc._id }, { error: msg });
+      return false;
     }
   }
 

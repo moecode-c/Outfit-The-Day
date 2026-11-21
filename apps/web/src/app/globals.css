@@ -19,6 +19,7 @@
   --subtle: #525252;
   --line: #262626;
   --wash: #141414;
+  --danger: #f87171; /* the light-mode red is ~2.6:1 on black; this is 7:1 */
 }
 
 @theme inline {

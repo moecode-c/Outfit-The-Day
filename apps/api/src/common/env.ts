@@ -27,8 +27,10 @@ export function checkEnv(env: NodeJS.ProcessEnv = process.env): EnvReport {
     if (env.THROTTLE_DISABLED === 'true') warnings.push('THROTTLE_DISABLED is ignored in production');
     // Railway/Render disks are wiped on every deploy, so uploads would silently disappear.
     if (!env.R2_BUCKET && env.ALLOW_DISK_UPLOADS !== 'true') errors.push('R2_BUCKET (and the other R2_* settings) must be set in production, or set ALLOW_DISK_UPLOADS=true for a persistent disk');
-    if (!env.SMTP_HOST) warnings.push('SMTP_HOST is not set: emails will only be stored in the admin outbox');
+    if (!env.BREVO_API_KEY && !env.SMTP_HOST) warnings.push('No email provider (BREVO_API_KEY or SMTP_HOST): emails, including password resets, will only be stored in the admin outbox');
   }
+  // Brevo only accepts a sender address verified in the Brevo account.
+  if (env.BREVO_API_KEY && !env.MAIL_FROM) problem('MAIL_FROM must be set to a sender verified in Brevo, e.g. "OTD <no-reply@your-domain>"');
   return { errors, warnings };
 }
 

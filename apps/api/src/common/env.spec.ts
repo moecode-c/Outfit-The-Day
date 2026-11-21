@@ -34,6 +34,12 @@ describe('checkEnv', () => {
     expect(r.warnings.length).toBeGreaterThanOrEqual(3);
   });
 
+  it('accepts Brevo as the email provider, but only with a sender address', () => {
+    expect(checkEnv({ ...prod, SMTP_HOST: undefined, BREVO_API_KEY: 'xkeysib-1', MAIL_FROM: 'OTD <no-reply@otd.example>' })).toEqual({ errors: [], warnings: [] });
+    expect(checkEnv({ ...prod, SMTP_HOST: undefined, BREVO_API_KEY: 'xkeysib-1' }).errors.join()).toMatch(/MAIL_FROM/);
+    expect(checkEnv({ ...prod, SMTP_HOST: undefined }).warnings.join()).toMatch(/No email provider/);
+  });
+
   it('assertEnv throws with every problem listed', () => {
     const warn = jest.fn();
     expect(() => assertEnv({ ...prod, JWT_ACCESS_SECRET: '', WEB_ORIGIN: '' }, { warn })).toThrow(/JWT_ACCESS_SECRET is not set[\s\S]*WEB_ORIGIN/);

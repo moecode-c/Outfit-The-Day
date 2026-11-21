@@ -197,7 +197,7 @@ export class AdminController {
   @AdminPerm('users')
   @Get('users/:id')
   async userDetail(@Param('id') id: string) {
-    const u = await this.users.findById(id).select('-passwordHash -refreshHash -verifyToken -resetToken').lean();
+    const u = await this.users.findById(id).select('-passwordHash -verifyToken -resetToken').lean();
     if (!u) throw new NotFoundException();
     const orders = await this.subs.find({ customer: id }).sort({ createdAt: -1 }).limit(50).populate('seller', 'storeName').lean();
     return { user: u, orders };
@@ -208,7 +208,7 @@ export class AdminController {
   async block(@CurrentUser() me: AuthUser, @Param('id') id: string, @Body(new Zod(z.object({ blocked: z.boolean(), resetCod: z.boolean().optional() }))) b: any) {
     if (id === me.id) throw new BadRequestException('You cannot block yourself');
     const patch: any = { blockedAt: b.blocked ? new Date() : null };
-    if (b.blocked) patch.refreshHash = null;
+    if (b.blocked) patch.refreshHashes = [];
     if (b.resetCod) patch.codFailures = 0;
     await this.users.updateOne({ _id: id }, patch);
     return { ok: true };

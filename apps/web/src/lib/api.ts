@@ -17,7 +17,7 @@ export class ApiError extends Error {
 
 /* ── CSRF: echo the otd_csrf cookie in a header on every state-changing request ── */
 const SAFE = new Set(['GET', 'HEAD', 'OPTIONS']);
-const readCsrf = () => (typeof document === 'undefined' ? null : document.cookie.match(/(?:^|;s*)otd_csrf=([a-f0-9]{64})/)?.[1] ?? null);
+const readCsrf = () => (typeof document === 'undefined' ? null : document.cookie.match(/(?:^|;\s*)otd_csrf=([a-f0-9]{64})/)?.[1] ?? null);
 let fetchingCsrf: Promise<string | null> | null = null;
 /** The current token; fetches one (which also sets the cookie) when the browser has none yet. */
 async function csrfToken(force = false): Promise<string | null> {

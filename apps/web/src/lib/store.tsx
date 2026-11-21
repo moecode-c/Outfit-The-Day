@@ -51,7 +51,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<BagItem[]>([]);
   const [open, setOpen] = useState(false);
   const [wish, setWish] = useState<Set<string>>(new Set());
-  const synced = useRef(false);
+  const syncing = useRef(false); // merge with the server bag started
+  const synced = useRef(false); // ...and finished: only then is the bag saved back
 
   const reload = useCallback(async () => {
     try {
@@ -74,12 +75,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
   // On login: merge the guest bag with the saved server bag, load wishlist.
   useEffect(() => {
     if (!me) {
+      syncing.current = false;
       synced.current = false;
       setWish(new Set());
       return;
     }
-    if (synced.current) return;
-    synced.current = true;
+    if (syncing.current) return;
+    syncing.current = true;
     (async () => {
       try {
         const server = await api<BagItem[]>('/account/cart');
@@ -93,6 +95,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
           return merged;
         });
       } catch {}
+      // Saving before the merge would overwrite the saved server bag with the guest bag.
+      synced.current = true;
       try {
         setWish(new Set(await api<string[]>('/account/wishlist/ids')));
       } catch {}

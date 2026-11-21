@@ -76,6 +76,86 @@ describe('login / session', () => {
   });
 });
 
+/** Waits for the newest outbox email to `to` with a reset link (emails are sent in the background). */
+async function resetLinkFor(to, admin) {
+  for (let i = 0; i < 40; i++) {
+    const r = await admin.get('/admin/outbox');
+    const mail = r.data.find((m) => m.to === to && /reset\?token=/.test(m.html));
+    if (mail) return { mail, token: mail.html.match(/reset\?token=([a-f0-9]+)/)[1], count: r.data.filter((m) => m.to === to && /reset\?token=/.test(m.html)).length };
+    await new Promise((res) => setTimeout(res, 100));
+  }
+  throw new Error('no reset email for ' + to);
+}
+
+describe('password reset', () => {
+  it('emails a link that resets the password once, signs out everywhere and verifies the email', async () => {
+    const c = await freshCustomer();
+    const admin = await as('admin');
+    assert.equal((await client().post('/auth/forgot', { email: `  ${c.email.toUpperCase()}  ` })).status, 200);
+    const { mail, token } = await resetLinkFor(c.email, admin);
+    assert.match(mail.subject, /Reset your password/);
+    assert.match(mail.html, /\/en\/reset\?token=/);
+
+    assert.deepEqual((await client().post('/auth/reset/check', { token })).data, { valid: true });
+    assert.equal((await client().post('/auth/reset', { token, password: 'short' })).status, 400, 'password rules apply');
+    assert.equal((await client().post('/auth/reset', { token, password: 'BrandNew123!' })).status, 200);
+
+    assert.deepEqual((await client().post('/auth/reset/check', { token })).data, { valid: false }, 'link is single-use');
+    assert.equal((await client().post('/auth/reset', { token, password: 'Another123!' })).status, 400);
+
+    assert.equal((await client().post('/auth/login', { identifier: c.email, password: 'Shopper123!' })).status, 401, 'old password stops working');
+    const fresh = await client().login({ identifier: c.email, password: 'BrandNew123!' });
+    assert.ok((await fresh.get('/auth/me')).data.emailVerifiedAt, 'email counts as verified');
+
+    c.jar.delete('otd_at'); // the old session's refresh token was revoked
+    assert.equal((await c.post('/auth/refresh')).status, 401);
+  });
+
+  it('rejects unknown, malformed and expired-looking tokens', async () => {
+    assert.deepEqual((await client().post('/auth/reset/check', { token: 'a'.repeat(48) })).data, { valid: false });
+    assert.deepEqual((await client().post('/auth/reset/check', { token: 'not-a-token' })).data, { valid: false });
+    assert.equal((await client().post('/auth/reset', { token: 'a'.repeat(48), password: 'Whatever123!' })).status, 400);
+    assert.equal((await client().post('/auth/reset', { token: '../../etc', password: 'Whatever123!' })).status, 400);
+  });
+
+  it('sends at most one email per minute to the same account', async () => {
+    const c = await freshCustomer();
+    const admin = await as('admin');
+    await client().post('/auth/forgot', { email: c.email });
+    const first = await resetLinkFor(c.email, admin);
+    await client().post('/auth/forgot', { email: c.email });
+    await new Promise((res) => setTimeout(res, 400));
+    const again = await resetLinkFor(c.email, admin);
+    assert.equal(again.count, 1);
+    assert.equal(again.token, first.token, 'the first link keeps working');
+  });
+
+  it('validates the email field', async () => {
+    assert.equal((await client().post('/auth/forgot', { email: 'not-an-email' })).status, 400);
+    assert.equal((await client().post('/auth/forgot', {})).status, 400);
+  });
+});
+
+describe('session revocation', () => {
+  it('logout revokes the refresh token on the server', async () => {
+    const c = await freshCustomer();
+    const stolen = c.jar.get('otd_rt');
+    assert.equal((await c.post('/auth/logout')).status, 200);
+    const thief = client();
+    thief.jar.set('otd_rt', stolen);
+    assert.equal((await thief.post('/auth/refresh')).status, 401);
+  });
+
+  it('changing the password signs out other devices but keeps this one', async () => {
+    const c = await freshCustomer();
+    const other = await client().login({ identifier: c.email, password: 'Shopper123!' });
+    assert.equal((await c.post('/auth/change-password', { current: 'Shopper123!', next: 'Changed456!' })).status, 200);
+    assert.equal((await c.post('/auth/refresh')).status, 200, 'this device stays signed in');
+    other.jar.delete('otd_at');
+    assert.equal((await other.post('/auth/refresh')).status, 401, 'the other device is signed out');
+  });
+});
+
 describe('role isolation', () => {
   const matrix = [
     // [path, customer, seller, admin]

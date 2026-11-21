@@ -26,6 +26,8 @@ test.describe('smoke: public routes', () => {
 
   for (const locale of ['en', 'ar']) {
     test(`all public pages render in ${locale} @mobile`, async ({ page }) => {
+      // 16 full page loads, each waiting for remote product photos: ~20s per page of budget.
+      test.setTimeout(20_000 * (statics.length + dynamic.length));
       const errors = watchErrors(page);
       for (const path of [...statics, ...dynamic]) {
         const r = await page.goto(`/${locale}${path}`);

@@ -24,7 +24,7 @@ export const Button = forwardRef<HTMLButtonElement, BtnProps>(function Button(
         variant === 'solid' && 'bg-ink text-canvas hover:opacity-85',
         variant === 'outline' && 'border border-ink hover:bg-ink hover:text-canvas',
         variant === 'ghost' && 'underline-offset-4 hover:underline',
-        variant === 'danger' && 'border border-danger text-danger hover:bg-danger hover:text-white',
+        variant === 'danger' && 'border border-danger text-danger hover:bg-danger hover:text-canvas',
         className,
       )}
       {...rest}
