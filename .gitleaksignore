@@ -1,0 +1,2 @@
+# False positive: NestJS boilerplate CI badge URL (?token=...) in the original API README.
+6806fcbceffe4a1b7f215bebb65ab60e989ba72f:apps/api/README.md:generic-api-key:5

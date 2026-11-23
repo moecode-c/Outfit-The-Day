@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - name: actionlint
         run: |
           bash <(curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.7/scripts/download-actionlint.bash) 1.7.7
@@ -54,7 +54,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: ./.github/actions/setup
       - name: Lint (api + web)
         run: pnpm -r lint
@@ -76,7 +76,7 @@ jobs:
       matrix:
         node: [22, 24]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: ./.github/actions/setup
         with: { node-version: '${{ matrix.node }}' }
       - name: API unit tests (pricing, coupons, search, validators, env, mail, storage)
@@ -85,20 +85,8 @@ jobs:
         run: pnpm --filter web exec vitest run --coverage
       - name: Coverage summary
         if: matrix.node == 24
-        run: |
-          node -e '
-            const fs = require("fs");
-            const rows = [["API (Jest)", "apps/api/coverage/coverage-summary.json"], ["Web (Vitest)", "apps/web/coverage/coverage-summary.json"]];
-            let md = "### Unit test coverage\n\n| Suite | Lines | Statements | Functions | Branches |\n|---|---|---|---|---|\n";
-            for (const [name, file] of rows) {
-              if (!fs.existsSync(file)) continue;
-              const t = JSON.parse(fs.readFileSync(file, "utf8")).total;
-              md += `| ${name} | ${t.lines.pct}% | ${t.statements.pct}% | ${t.functions.pct}% | ${t.branches.pct}% |\n`;
-            }
-            md += "\nIntegration, scenario and browser suites cover the rest of the code; unit coverage is reported, not enforced.\n";
-            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, md);
-          '
-      - uses: actions/upload-artifact@v4
+        run: node scripts/ci/coverage-summary.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: matrix.node == 24
         with:
           name: unit-coverage
@@ -113,10 +101,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: ./.github/actions/setup
         with: { build-shared: 'false' }
-      - uses: actions/cache@v4
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: apps/web/.next/cache
           key: next-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('apps/web/src/**', 'apps/web/messages/**', 'packages/shared/src/**') }}
@@ -134,7 +122,7 @@ jobs:
             echo "| apps/web/.next (without cache) | $(du -sh --exclude=cache apps/web/.next | cut -f1) |"
             echo "| apps/web/.next/static (client JS/CSS) | $(du -sh apps/web/.next/static | cut -f1) |"
           } >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: build
           include-hidden-files: true
@@ -165,10 +153,10 @@ jobs:
     env:
       API: http://localhost:4000/api
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: ./.github/actions/setup
         with: { build-shared: 'false' }
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with: { name: build }
       - uses: ./.github/actions/start-stack
         with: { web: 'false' }
@@ -188,7 +176,7 @@ jobs:
           echo "127.0.0.1 otd-mongo" | sudo tee -a /etc/hosts
           MONGODB_URI=mongodb://localhost:27017/otd_prod_smoke pnpm --filter api seed
           pnpm --filter api test:prod-smoke
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: failure()
         with: { name: 'api-log-mongo-${{ matrix.mongo }}', path: api.log, retention-days: 7 }
 
@@ -213,35 +201,33 @@ jobs:
     env:
       WEB_URL: http://localhost:3000
       PW_ALL_BROWSERS: ${{ matrix.suite == 'cross' && '1' || '' }}
-      BROWSERS: ${{ matrix.suite == 'cross' && 'firefox webkit' || 'chromium' }}
-      PROJECTS: ${{ matrix.suite == 'cross' && '--project=firefox --project=webkit --project=mobile-safari' || '--project=desktop --project=mobile' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: ./.github/actions/setup
         with: { build-shared: 'false' }
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with: { name: build }
       - name: Playwright version
         id: pw
         run: echo "version=$(node -p "require('./apps/web/node_modules/@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache@v4
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         id: pw-cache
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}-${{ matrix.suite }}
       - name: Install browsers
         if: steps.pw-cache.outputs.cache-hit != 'true'
-        run: pnpm --filter web exec playwright install --with-deps $BROWSERS
+        run: pnpm --filter web exec playwright install --with-deps ${{ matrix.suite == 'cross' && 'firefox webkit' || 'chromium' }}
       - name: Install browser system dependencies
         if: steps.pw-cache.outputs.cache-hit == 'true'
-        run: pnpm --filter web exec playwright install-deps $BROWSERS
+        run: pnpm --filter web exec playwright install-deps ${{ matrix.suite == 'cross' && 'firefox webkit' || 'chromium' }}
       - uses: ./.github/actions/start-stack
       - name: Playwright
-        run: pnpm --filter web exec playwright test $PROJECTS
-      - uses: actions/upload-artifact@v4
+        run: pnpm --filter web exec playwright test ${{ matrix.suite == 'cross' && '--project=firefox --project=webkit --project=mobile-safari' || '--project=desktop --project=mobile' }}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with: { name: 'playwright-report-${{ matrix.suite }}', path: apps/web/playwright-report, retention-days: 14, if-no-files-found: ignore }
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: failure()
         with:
           name: e2e-traces-and-logs-${{ matrix.suite }}
@@ -265,36 +251,21 @@ jobs:
           --health-cmd "mongosh --quiet --eval 'db.runCommand({ping:1})'"
           --health-interval 5s --health-timeout 5s --health-retries 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: ./.github/actions/setup
         with: { build-shared: 'false' }
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with: { name: build }
       - uses: ./.github/actions/start-stack
       - name: Lighthouse CI
         run: npx --yes @lhci/cli@0.14.0 autorun --config=.github/lighthouse/lighthouserc.json
       - name: Scores summary
         if: always()
-        run: |
-          node -e '
-            const fs = require("fs"), path = require("path");
-            const dir = ".lighthouseci";
-            if (!fs.existsSync(dir)) process.exit(0);
-            const best = {};
-            for (const f of fs.readdirSync(dir).filter((f) => /^lhr-.*\.json$/.test(f))) {
-              const r = JSON.parse(fs.readFileSync(path.join(dir, f), "utf8"));
-              const url = new URL(r.finalDisplayedUrl ?? r.finalUrl).pathname + new URL(r.finalDisplayedUrl ?? r.finalUrl).search;
-              const s = Object.fromEntries(Object.entries(r.categories).map(([k, v]) => [k, Math.round(v.score * 100)]));
-              if (!best[url] || s.performance > best[url].performance) best[url] = s;
-            }
-            let md = "### Lighthouse (best of runs)\n\n| Page | Performance | Accessibility | Best practices | SEO |\n|---|---|---|---|---|\n";
-            for (const [u, s] of Object.entries(best)) md += `| ${u} | ${s.performance} | ${s.accessibility} | ${s["best-practices"]} | ${s.seo} |\n`;
-            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, md);
-          '
-      - uses: actions/upload-artifact@v4
+        run: node scripts/ci/lighthouse-summary.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with: { name: lighthouse-report, path: .lighthouseci, include-hidden-files: true, retention-days: 14, if-no-files-found: ignore }
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: failure()
         with: { name: lighthouse-logs, path: '*.log', retention-days: 7 }
 
@@ -304,7 +275,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with: { fetch-depth: 0 }
       - name: gitleaks
         run: |
@@ -314,12 +285,13 @@ jobs:
   # ── New dependencies in a PR (licence + known vulnerabilities) ───────────────
   dependency-review:
     name: Dependency review
-    if: github.event_name == 'pull_request'
+    # Needs the repository's Dependency graph (Settings → Code security); then set the repo variable DEPENDENCY_REVIEW=true.
+    if: github.event_name == 'pull_request' && vars.DEPENDENCY_REVIEW == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/dependency-review-action@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/dependency-review-action@bbc44d14a204704ccc493733616cd1e93a0321ec # v5.0.1
         with:
           fail-on-severity: high
 
@@ -330,9 +302,9 @@ jobs:
     timeout-minutes: 10
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with: { node-version: '${{ env.NODE_VERSION }}' }
       - run: pnpm audit --prod --audit-level=high
 
