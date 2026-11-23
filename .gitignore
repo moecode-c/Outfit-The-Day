@@ -17,3 +17,7 @@ apps/api/uploads/
 
 # Database backups (scripts/backup.mjs)
 backups/
+
+# CI outputs
+.lighthouseci/
+apps/api/uploads-prod-smoke/

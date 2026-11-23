@@ -1,0 +1,25 @@
+name: Start API + web
+description: Seeds the database, starts the built API (and optionally the built web app) in the background and waits until they answer.
+
+inputs:
+  web:
+    description: Also start the Next.js production server on :3000
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    - name: Seed database
+      shell: bash
+      run: pnpm --filter api seed
+    - name: Start API
+      shell: bash
+      run: |
+        (cd apps/api && nohup node dist/main > ../../api.log 2>&1 &)
+        node scripts/wait-for.mjs http://localhost:4000/api/health 60
+    - name: Start web
+      if: inputs.web == 'true'
+      shell: bash
+      run: |
+        (cd apps/web && nohup npx next start -p 3000 > ../../web.log 2>&1 &)
+        node scripts/wait-for.mjs http://localhost:3000/en 120

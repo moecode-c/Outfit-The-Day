@@ -21,6 +21,8 @@
     "dev": "nest start --watch",
     "seed": "ts-node -r tsconfig-paths/register src/seed.ts",
     "test:int": "node --test --test-concurrency=1 \"test/integration/*.test.mjs\"",
+    "test:backup": "node --test test/backup-roundtrip.mjs",
+    "test:prod-smoke": "node --test test/prod-smoke.mjs",
     "lint:fix": "eslint \"src/**/*.ts\" --fix",
     "typecheck": "tsc --noEmit",
     "backup": "node scripts/backup.mjs",

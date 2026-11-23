@@ -24,5 +24,13 @@ export default defineConfig({
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1366, height: 900 } } },
     { name: 'mobile', use: { ...devices['Pixel 7'] }, grep: /@mobile/ },
+    // Cross-browser run (nightly CI / PW_ALL_BROWSERS=1): Firefox + WebKit desktop, iPhone Safari.
+    ...(process.env.PW_ALL_BROWSERS
+      ? [
+          { name: 'firefox', use: { ...devices['Desktop Firefox'], viewport: { width: 1366, height: 900 } } },
+          { name: 'webkit', use: { ...devices['Desktop Safari'], viewport: { width: 1366, height: 900 } } },
+          { name: 'mobile-safari', use: { ...devices['iPhone 14'] }, grep: /@mobile/ },
+        ]
+      : []),
   ],
 });
