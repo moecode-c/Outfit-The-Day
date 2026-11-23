@@ -1,0 +1,26 @@
+name: Setup workspace
+description: pnpm + Node (with pnpm store cache), frozen install, optional @otd/shared build.
+
+inputs:
+  node-version:
+    description: Node.js version
+    default: '24'
+  build-shared:
+    description: Build @otd/shared after install
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: pnpm
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile
+    - name: Build @otd/shared
+      if: inputs.build-shared == 'true'
+      shell: bash
+      run: pnpm --filter @otd/shared build

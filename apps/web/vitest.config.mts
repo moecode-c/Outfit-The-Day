@@ -6,5 +6,11 @@ export default defineConfig({
   test: {
     include: ['test/unit/**/*.test.ts'],
     environment: 'node',
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{ts,tsx}'],
+      reporter: ['text-summary', 'json-summary', 'lcov', 'html'],
+      reportsDirectory: 'coverage',
+    },
   },
 });
